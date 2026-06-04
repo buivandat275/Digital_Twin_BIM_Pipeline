@@ -1,0 +1,120 @@
+[
+  {
+    "asset_id": "FZK-UNK-UNK-EG-001",
+    "asset_name": "Unknown-Proxy-1",
+    "asset_type": "Unknown",
+    "ifc_class": "IfcBuildingElementProxy",
+    "system": "Needs Review",
+    "location": "EG",
+    "floor": "EG",
+    "room_zone": "",
+    "manufacturer": "",
+    "model": "",
+    "serial_number": "",
+    "warranty": "",
+    "maintenance_info": "",
+    "status": "Active",
+    "source_global_id": "0JZK8hYJz7mQnW8LxYJ104",
+    "source_file": "AC20-FZK-Haus.ifc",
+    "technical_properties": {},
+    "quantity_properties": {},
+    "source_reference": {
+      "building": "FZK Haus",
+      "source_file": "AC20-FZK-Haus.ifc",
+      "ARCHICAD IFC ID": "ARCH-Proxy-001"
+    },
+    "raw_metadata": {
+      "ArchiCADProperties": {
+        "symbol pen": "12"
+      }
+    }
+  },
+  {
+    "asset_id": "FZK-ARC-DOOR-EG-001",
+    "asset_name": "EG-Tuer-1",
+    "asset_type": "Door",
+    "ifc_class": "IfcDoor",
+    "system": "Door System",
+    "location": "EG",
+    "floor": "EG",
+    "room_zone": "",
+    "manufacturer": "Demo Door Co",
+    "model": "DOOR-EG",
+    "serial_number": "",
+    "warranty": "",
+    "maintenance_info": "",
+    "status": "Active",
+    "source_global_id": "0JZK8hYJz7mQnW8LxYJ103",
+    "source_file": "AC20-FZK-Haus.ifc",
+    "technical_properties": {
+      "Manufacturer": "Demo Door Co",
+      "Model": "DOOR-EG",
+      "Status": "Active"
+    },
+    "quantity_properties": {},
+    "source_reference": {
+      "building": "FZK Haus",
+      "source_file": "AC20-FZK-Haus.ifc"
+    },
+    "raw_metadata": {}
+  },
+  {
+    "asset_id": "FZK-ARC-WALL-EG-001",
+    "asset_name": "Wand-Int-ERDG-4",
+    "asset_type": "Wall",
+    "ifc_class": "IfcWallStandardCase",
+    "system": "Wall System",
+    "location": "EG",
+    "floor": "EG",
+    "room_zone": "",
+    "manufacturer": "",
+    "model": "",
+    "serial_number": "",
+    "warranty": "",
+    "maintenance_info": "",
+    "status": "Active",
+    "source_global_id": "0JZK8hYJz7mQnW8LxYJ101",
+    "source_file": "AC20-FZK-Haus.ifc",
+    "technical_properties": {
+      "IsExternal": false,
+      "LoadBearing": true,
+      "FireRating": "EI60"
+    },
+    "quantity_properties": {},
+    "source_reference": {
+      "building": "FZK Haus",
+      "source_file": "AC20-FZK-Haus.ifc"
+    },
+    "raw_metadata": {}
+  },
+  {
+    "asset_id": "FZK-ARC-WIN-EG-001",
+    "asset_name": "EG-Fenster-6",
+    "asset_type": "Window",
+    "ifc_class": "IfcWindow",
+    "system": "Window System",
+    "location": "EG",
+    "floor": "EG",
+    "room_zone": "",
+    "manufacturer": "Demo Windows GmbH",
+    "model": "WIN-AC20",
+    "serial_number": "SN-WIN-006",
+    "warranty": "",
+    "maintenance_info": "",
+    "status": "Active",
+    "source_global_id": "0JZK8hYJz7mQnW8LxYJ102",
+    "source_file": "AC20-FZK-Haus.ifc",
+    "technical_properties": {
+      "Manufacturer": "Demo Windows GmbH",
+      "Model": "WIN-AC20",
+      "SerialNumber": "SN-WIN-006",
+      "ThermalTransmittance": 1.2
+    },
+    "quantity_properties": {},
+    "source_reference": {
+      "building": "FZK Haus",
+      "source_file": "AC20-FZK-Haus.ifc"
+    },
+    "raw_metadata": {}
+  }
+]

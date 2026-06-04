@@ -1,0 +1,68 @@
+[
+  {
+    "asset_id": "FZK-UNK-UNK-EG-001",
+    "property_group": "raw_metadata",
+    "property_name": "ArchiCADProperties.symbol pen",
+    "property_value": "12"
+  },
+  {
+    "asset_id": "FZK-ARC-DOOR-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "Manufacturer",
+    "property_value": "Demo Door Co"
+  },
+  {
+    "asset_id": "FZK-ARC-DOOR-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "Model",
+    "property_value": "DOOR-EG"
+  },
+  {
+    "asset_id": "FZK-ARC-DOOR-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "Status",
+    "property_value": "Active"
+  },
+  {
+    "asset_id": "FZK-ARC-WALL-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "IsExternal",
+    "property_value": false
+  },
+  {
+    "asset_id": "FZK-ARC-WALL-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "LoadBearing",
+    "property_value": true
+  },
+  {
+    "asset_id": "FZK-ARC-WALL-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "FireRating",
+    "property_value": "EI60"
+  },
+  {
+    "asset_id": "FZK-ARC-WIN-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "Manufacturer",
+    "property_value": "Demo Windows GmbH"
+  },
+  {
+    "asset_id": "FZK-ARC-WIN-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "Model",
+    "property_value": "WIN-AC20"
+  },
+  {
+    "asset_id": "FZK-ARC-WIN-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "SerialNumber",
+    "property_value": "SN-WIN-006"
+  },
+  {
+    "asset_id": "FZK-ARC-WIN-EG-001",
+    "property_group": "technical_properties",
+    "property_name": "ThermalTransmittance",
+    "property_value": 1.2
+  }
+]

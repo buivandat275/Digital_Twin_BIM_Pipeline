@@ -1,0 +1,22 @@
+[
+  {
+    "system_id": "Needs_Review",
+    "system_name": "Needs Review",
+    "asset_type": "Unknown"
+  },
+  {
+    "system_id": "Door_System",
+    "system_name": "Door System",
+    "asset_type": "Door"
+  },
+  {
+    "system_id": "Wall_System",
+    "system_name": "Wall System",
+    "asset_type": "Wall"
+  },
+  {
+    "system_id": "Window_System",
+    "system_name": "Window System",
+    "asset_type": "Window"
+  }
+]

@@ -1,0 +1,11 @@
+system_id,system_name,asset_type
+Needs_Review,Needs Review,Unknown
+Beam_System,Beam System,Beam
+Door_System,Door System,Door
+Structural_Member,Structural Member,Member
+Railing_System,Railing System,Railing
+Slab_System,Slab System,Slab
+Stair_System,Stair System,Stair
+Wall_System,Wall System,Wall
+Window_System,Window System,Window
+Space_Management,Space Management,Room
