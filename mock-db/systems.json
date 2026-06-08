@@ -33,5 +33,10 @@
     "system_id": "Slab_System",
     "system_name": "Slab System",
     "asset_type": "Slab"
+  },
+  {
+    "system_id": "Covering_System",
+    "system_name": "Covering System",
+    "asset_type": "Covering"
   }
 ]

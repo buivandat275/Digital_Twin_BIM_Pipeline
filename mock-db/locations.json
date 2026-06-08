@@ -8,28 +8,28 @@
   },
   {
     "location_id": "Level_10",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 10",
     "floor": "Level 10",
     "room_zone": ""
   },
   {
     "location_id": "Level_11",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 11",
     "floor": "Level 11",
     "room_zone": ""
   },
   {
     "location_id": "Level_9",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 9",
     "floor": "Level 9",
     "room_zone": ""
   },
   {
     "location_id": "Level_6+",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 6+",
     "floor": "Level 6+",
     "room_zone": ""
@@ -43,7 +43,7 @@
   },
   {
     "location_id": "Level_6",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 6",
     "floor": "Level 6",
     "room_zone": ""
@@ -57,114 +57,135 @@
   },
   {
     "location_id": "Level_3",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 3",
     "floor": "Level 3",
     "room_zone": ""
   },
   {
     "location_id": "Level_4",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 4",
     "floor": "Level 4",
     "room_zone": ""
   },
   {
     "location_id": "Level_5",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 5",
     "floor": "Level 5",
     "room_zone": ""
   },
   {
     "location_id": "Level_TEC",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level TEC",
     "floor": "Level TEC",
     "room_zone": ""
   },
   {
     "location_id": "Level_7",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 7",
     "floor": "Level 7",
     "room_zone": ""
   },
   {
     "location_id": "Level_8",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 8",
     "floor": "Level 8",
     "room_zone": ""
   },
   {
     "location_id": "Level_12",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 12",
     "floor": "Level 12",
     "room_zone": ""
   },
   {
     "location_id": "Level_13",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 13",
     "floor": "Level 13",
     "room_zone": ""
   },
   {
     "location_id": "Level_14",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 14",
     "floor": "Level 14",
     "room_zone": ""
   },
   {
     "location_id": "Level_15",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 15",
     "floor": "Level 15",
     "room_zone": ""
   },
   {
     "location_id": "Level_16",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 16",
     "floor": "Level 16",
     "room_zone": ""
   },
   {
     "location_id": "Level_17",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 17",
     "floor": "Level 17",
     "room_zone": ""
   },
   {
     "location_id": "Level_18",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 18",
     "floor": "Level 18",
     "room_zone": ""
   },
   {
     "location_id": "Level_19",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Level 19",
     "floor": "Level 19",
     "room_zone": ""
   },
   {
     "location_id": "Roof",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Roof",
     "floor": "Roof",
     "room_zone": ""
   },
   {
     "location_id": "Top",
-    "building": "https://dscons.vn - contact@dscons.vn",
+    "building": "",
     "location": "Top",
     "floor": "Top",
+    "room_zone": ""
+  },
+  {
+    "location_id": "LEVEL_01",
+    "building": "",
+    "location": "LEVEL 01",
+    "floor": "LEVEL 01",
+    "room_zone": ""
+  },
+  {
+    "location_id": "LEVEL_02",
+    "building": "",
+    "location": "LEVEL 02",
+    "floor": "LEVEL 02",
+    "room_zone": ""
+  },
+  {
+    "location_id": "UNK",
+    "building": "",
+    "location": "UNK",
+    "floor": "UNK",
     "room_zone": ""
   }
 ]

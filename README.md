@@ -101,7 +101,7 @@ Open:
 http://127.0.0.1:5173
 ```
 
-The viewer reads IFC files from `output/`, loads clean asset metadata from `mock-db/assets.json`, and lets you click IFC objects to inspect `GlobalId` and match Digital Twin metadata. Keep Streamlit for validation/clean/mapping/export, and use this viewer for the 3D/object-property workflow.
+The viewer reads IFC files from `output/`, can import an IFC manually in the browser, loads clean asset metadata from `mock-db/assets.json`, and lets you click IFC objects to inspect old IFC/source properties beside new Digital Twin metadata. Keep Streamlit for validation/clean/mapping/export, and use this viewer for the 3D/object-property workflow.
 
 For ODA, prefer a dedicated variable:
 
@@ -233,4 +233,4 @@ selected IFC GlobalId
 
 ## 9. Notes
 
-This is a PoC only. It does not modify the original IFC file and does not include a 3D viewer. For production, rules should be externalized into JSON/YAML profiles and the correction workflow should include audit history and approval.
+This is a PoC only. It does not modify the original IFC file. The included `digital-twin-viewer` is a browser-based 3D inspection surface for IFC geometry, old IFC/source properties, and clean mock Digital Twin metadata. For production, rules should be externalized into JSON/YAML profiles and the correction workflow should include audit history and approval.

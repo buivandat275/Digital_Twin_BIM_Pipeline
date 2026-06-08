@@ -14,6 +14,7 @@ import {
   MousePointer2,
   RotateCcw,
   Search,
+  Upload,
 } from "lucide-react";
 import * as THREE from "three";
 import * as OBC from "@thatopen/components";
@@ -50,6 +51,20 @@ function valueOf(input) {
   return input ?? "";
 }
 
+function normalizeIfcValue(value, depth = 0) {
+  if (depth > 4) return "[Nested data]";
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.slice(0, 80).map((item) => normalizeIfcValue(item, depth + 1));
+  if (typeof value !== "object") return value;
+  if ("value" in value && Object.keys(value).length <= 3) return normalizeIfcValue(value.value, depth + 1);
+
+  const normalized = {};
+  Object.entries(value).slice(0, 120).forEach(([key, nestedValue]) => {
+    if (typeof nestedValue !== "function") normalized[key] = normalizeIfcValue(nestedValue, depth + 1);
+  });
+  return normalized;
+}
+
 function buildAssetIndex(assets) {
   const index = new Map();
   assets.forEach((asset) => {
@@ -61,7 +76,7 @@ function buildAssetIndex(assets) {
 
 function normalizeOdaProperties(properties = []) {
   if (!Array.isArray(properties)) return properties && typeof properties === "object" ? properties : {};
-  const normalized = {};
+  const normalized = {}
   for (let index = 0; index < properties.length; index += 2) {
     const groupName = properties[index];
     const groupValue = properties[index + 1];
@@ -123,8 +138,9 @@ function propertyRows(object, asset) {
 
 function App() {
   const [files, setFiles] = useState({ ifcFiles: [], metadataFiles: [] });
+  const [uploadedIfcFiles, setUploadedIfcFiles] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [selectedFile, setSelectedFile] = useState("");
+  const [selectedFileKey, setSelectedFileKey] = useState("");
   const [selectedObject, setSelectedObject] = useState(null);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [sourcePropertyIndex, setSourcePropertyIndex] = useState(new Map());
@@ -137,6 +153,17 @@ function App() {
   const [search, setSearch] = useState("");
   const viewerRef = useRef(null);
 
+  const allIfcFiles = useMemo(
+    () => [
+      ...(files.ifcFiles || []).map((file) => ({ ...file, key: `output:${file.name}`, source: "output" })),
+      ...uploadedIfcFiles.map((file) => ({ ...file, key: `upload:${file.name}`, source: "upload" })),
+    ],
+    [files.ifcFiles, uploadedIfcFiles],
+  );
+  const selectedModel = useMemo(
+    () => allIfcFiles.find((file) => file.key === selectedFileKey) || null,
+    [allIfcFiles, selectedFileKey],
+  );
   const assetIndex = useMemo(() => buildAssetIndex(assets), [assets]);
   const mappedAssets = useMemo(() => assets.filter((item) => item.source_global_id), [assets]);
   const filteredAssets = useMemo(() => {
@@ -160,7 +187,7 @@ function App() {
       const assetData = await assetRes.json();
       setFiles(fileData);
       setAssets(assetData);
-      if (fileData.ifcFiles?.length) setSelectedFile(fileData.ifcFiles[0].name);
+      if (fileData.ifcFiles?.length) setSelectedFileKey(`output:${fileData.ifcFiles[0].name}`);
     }
     bootstrap().catch((error) => {
       setViewerState({ status: "Error", message: error.message, progress: 0 });
@@ -171,13 +198,13 @@ function App() {
     setSelectedObject(null);
     setSelectedAsset(null);
     setSelectedSourceProperties(null);
-    if (!selectedFile) {
+    if (!selectedModel || selectedModel.source !== "output") {
       setSourcePropertyIndex(new Map());
       return;
     }
 
     async function loadSourceProperties() {
-      const jsonName = selectedFile.replace(/\.ifc$/i, ".json");
+      const jsonName = selectedModel.name.replace(/\.ifc$/i, ".json");
       const response = await fetch(`/bim-output/${encodeURIComponent(jsonName)}`);
       if (!response.ok) {
         setSourcePropertyIndex(new Map());
@@ -188,7 +215,28 @@ function App() {
     }
 
     loadSourceProperties().catch(() => setSourcePropertyIndex(new Map()));
-  }, [selectedFile]);
+  }, [selectedModel]);
+
+  function handleIfcUpload(event) {
+    const nextFiles = Array.from(event.target.files || [])
+      .filter((file) => file.name.toLowerCase().endsWith(".ifc"))
+      .map((file) => ({
+        key: `upload:${file.name}`,
+        source: "upload",
+        name: file.name,
+        size: file.size,
+        updatedAt: new Date(file.lastModified || Date.now()).toISOString(),
+        file,
+      }));
+    if (!nextFiles.length) return;
+    setUploadedIfcFiles((current) => {
+      const byName = new Map(current.map((file) => [file.name, file]));
+      nextFiles.forEach((file) => byName.set(file.name, file));
+      return Array.from(byName.values()).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    });
+    setSelectedFileKey(nextFiles[0].key);
+    event.target.value = "";
+  }
 
   const handleObjectPicked = useCallback((object) => {
     setSelectedObject(object);
@@ -212,20 +260,25 @@ function App() {
 
         <div className="model-picker">
           <FileCode2 size={18} />
-          <select value={selectedFile} onChange={(event) => setSelectedFile(event.target.value)}>
-            {files.ifcFiles.map((file) => (
-              <option value={file.name} key={file.name}>
+          <select value={selectedFileKey} onChange={(event) => setSelectedFileKey(event.target.value)}>
+            {allIfcFiles.map((file) => (
+              <option value={file.key} key={file.key}>
+                {file.source === "upload" ? "[Upload] " : ""}
                 {file.name} · {formatBytes(file.size)}
               </option>
             ))}
           </select>
+          <label className="icon-button upload-button" title="Import IFC file">
+            <Upload size={18} />
+            <input type="file" accept=".ifc" multiple onChange={handleIfcUpload} />
+          </label>
         </div>
       </header>
 
       <main className="workspace">
         <aside className="asset-rail">
           <section className="summary-band">
-            <Metric icon={<Box size={18} />} label="IFC files" value={files.ifcFiles.length} />
+            <Metric icon={<Box size={18} />} label="IFC files" value={allIfcFiles.length} />
             <Metric icon={<Database size={18} />} label="Assets" value={assets.length} />
           </section>
 
@@ -272,7 +325,7 @@ function App() {
 
           <ThatOpenCanvas
             ref={viewerRef}
-            fileName={selectedFile}
+            modelFile={selectedModel}
             onPicked={handleObjectPicked}
             onStateChange={setViewerState}
           />
@@ -294,7 +347,7 @@ function App() {
                   "No object selected"}
               </h2>
             </div>
-            {selectedAsset || selectedSourceProperties ? (
+            {selectedObject || selectedAsset || selectedSourceProperties ? (
               <CheckCircle2 className="ok" size={22} />
             ) : (
               <AlertTriangle className="warn" size={22} />
@@ -304,19 +357,11 @@ function App() {
           <section className="link-state">
             <Layers3 size={18} />
             <div>
-              <strong>
-                {selectedAsset
-                  ? "Clean metadata linked"
-                  : selectedSourceProperties
-                    ? "Source properties linked"
-                    : "Waiting for GlobalId match"}
-              </strong>
+              <strong>{selectedAsset ? "New DB metadata linked" : "Waiting for DB GlobalId match"}</strong>
               <span>
                 {selectedAsset
                   ? "Clean asset data is available from mock Digital Twin store."
-                  : selectedSourceProperties
-                    ? "Raw RVT/IFC properties are matched by IfcGUID from the ODA JSON export."
-                  : "Click an IFC object or select an asset from the list."}
+                  : "Click an IFC object. Old IFC properties can still be shown even when DB metadata is missing."}
               </span>
             </div>
           </section>
@@ -330,11 +375,24 @@ function App() {
             ))}
           </dl>
 
-          {selectedAsset?.technical_properties && (
-            <JsonBlock title="Technical Properties" value={selectedAsset.technical_properties} />
-          )}
+          {selectedObject?.ifcProperties && <JsonBlock title="Old IFC Properties" value={selectedObject.ifcProperties} />}
           {selectedSourceProperties?.properties && (
-            <JsonBlock title="Source RVT/IFC Properties" value={selectedSourceProperties.properties} />
+            <JsonBlock title="Old Source Properties From ODA JSON" value={selectedSourceProperties.properties} />
+          )}
+          {selectedAsset && (
+            <JsonBlock
+              title="New DB Metadata"
+              value={{
+                ...selectedAsset,
+                technical_properties: undefined,
+                raw_metadata: undefined,
+                quantity_properties: undefined,
+                source_reference: undefined,
+              }}
+            />
+          )}
+          {selectedAsset?.technical_properties && (
+            <JsonBlock title="New Technical Properties" value={selectedAsset.technical_properties} />
           )}
           {selectedAsset?.raw_metadata && <JsonBlock title="Raw Metadata" value={selectedAsset.raw_metadata} />}
         </aside>
@@ -374,7 +432,7 @@ function JsonBlock({ title, value }) {
   );
 }
 
-const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ fileName, onPicked, onStateChange }, ref) {
+const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ modelFile, onPicked, onStateChange }, ref) {
   const containerRef = useRef(null);
   const componentsRef = useRef(null);
   const worldRef = useRef(null);
@@ -427,7 +485,7 @@ const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ fileName, onPi
     fragmentsRef.current = fragments;
 
     async function initFragments() {
-      fragments.init(await OBC.FragmentsManager.getWorker());
+      fragments.init("/fragments-worker/worker.mjs");
       world.camera.controls.addEventListener("update", () => fragments.core.update());
       world.camera.controls.addEventListener("rest", () => fragments.core.update(true));
       world.onCameraChanged.add((camera) => {
@@ -475,6 +533,7 @@ const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ fileName, onPi
       }
       let name = "";
       let ifcType = "";
+      let ifcProperties = {};
       try {
         const data = await model.getItems([result.localId]);
         const item = data.get(result.localId);
@@ -483,11 +542,27 @@ const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ fileName, onPi
       } catch {
         // Some fragment data can be lazily unavailable; localId and guid are enough for matching.
       }
+      try {
+        const [itemData] = await model.getItemsData([result.localId], {
+          attributesDefault: true,
+          relations: {
+            IsDefinedBy: { attributes: true, relations: true },
+            DefinesOccurrence: { attributes: true, relations: true },
+            HasAssociations: { attributes: true, relations: true },
+          },
+        });
+        ifcProperties = normalizeIfcValue(itemData || {});
+        name = name || valueOf(itemData?.Name) || valueOf(itemData?.Name?.value) || "";
+        ifcType = ifcType || valueOf(itemData?._category) || "";
+      } catch {
+        // Old IFC properties are best-effort; DB matching still uses GlobalId.
+      }
       onPickedRef.current({
         localId: result.localId,
         globalId: globalId || "",
         ifcType,
         name: name || `IFC object ${result.localId}`,
+        ifcProperties,
       });
       onStateChangeRef.current({
         status: "Ready",
@@ -595,7 +670,7 @@ const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ fileName, onPi
   }
 
   useEffect(() => {
-    if (!fileName || !componentsRef.current || !worldRef.current || !fragmentsRef.current) return undefined;
+    if (!modelFile || !componentsRef.current || !worldRef.current || !fragmentsRef.current) return undefined;
     let cancelled = false;
 
     async function loadIfc() {
@@ -621,9 +696,15 @@ const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ fileName, onPi
           wasm: { path: "/wasm/", absolute: true },
         });
 
-        const response = await fetch(`/bim-output/${encodeURIComponent(fileName)}`);
-        const data = new Uint8Array(await response.arrayBuffer());
-        const model = await loader.load(data, true, fileName, {
+        const buffer =
+          modelFile.source === "upload"
+            ? await modelFile.file.arrayBuffer()
+            : await fetch(`/bim-output/${encodeURIComponent(modelFile.name)}`).then((response) => {
+                if (!response.ok) throw new Error(`IFC file not found: ${modelFile.name}`);
+                return response.arrayBuffer();
+              });
+        const data = new Uint8Array(buffer);
+        const model = await loader.load(data, true, modelFile.name, {
           instanceCallback: (importer) => {
             importer.addAllAttributes();
             importer.addAllRelations();
@@ -652,7 +733,7 @@ const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ fileName, onPi
           modelId: model.modelId,
           box: model.box ? model.box.getSize(new THREE.Vector3()).toArray() : [],
         };
-        onStateChangeRef.current({ status: "Ready", message: `Loaded ${fileName}`, progress: 100 });
+        onStateChangeRef.current({ status: "Ready", message: `Loaded ${modelFile.name}`, progress: 100 });
       } catch (error) {
         onStateChangeRef.current({ status: "Error", message: error.message || "IFC load failed", progress: 0 });
       }
@@ -663,7 +744,7 @@ const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ fileName, onPi
       cancelled = true;
       window.clearTimeout(id);
     };
-  }, [fileName]);
+  }, [modelFile]);
 
   async function fitModel() {
     const world = worldRef.current;

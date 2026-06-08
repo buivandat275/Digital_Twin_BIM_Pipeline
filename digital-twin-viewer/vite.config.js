@@ -9,6 +9,15 @@ const projectRoot = path.resolve(__dirname, "..");
 const outputDir = path.join(projectRoot, "output");
 const mockDbDir = path.join(projectRoot, "mock-db");
 const webIfcDir = path.join(__dirname, "node_modules", "web-ifc");
+const fragmentsWorkerPath = path.join(
+  __dirname,
+  "node_modules",
+  "@thatopen",
+  "fragments",
+  "dist",
+  "Worker",
+  "worker.min.mjs",
+);
 
 function readJson(filePath, fallback) {
   try {
@@ -95,6 +104,17 @@ function digitalTwinApi() {
           }
           res.setHeader("Content-Type", "application/wasm");
           fs.createReadStream(wasmPath).pipe(res);
+          return;
+        }
+
+        if (url.pathname === "/fragments-worker/worker.mjs") {
+          if (!fs.existsSync(fragmentsWorkerPath)) {
+            res.statusCode = 404;
+            res.end("Fragments worker not found");
+            return;
+          }
+          res.setHeader("Content-Type", "text/javascript");
+          fs.createReadStream(fragmentsWorkerPath).pipe(res);
           return;
         }
 

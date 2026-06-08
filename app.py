@@ -28,7 +28,6 @@ from services.mapper import (
     default_mapping_dataframe,
     save_mapping,
 )
-from services.oda_viewer import ODAViewerError, detect_oda_bim_viewer, launch_oda_bim_viewer
 from services.rvt_converter import (
     RVTConversionError,
     convert_rvt_to_ifc,
@@ -135,10 +134,9 @@ def render_dashboard() -> None:
 
 def render_pipeline() -> None:
     st.title("BIM Pipeline / BIM Converter")
-    rvt_convert, oda_view, upload, compliance, inspect, validate, map_tab, preview, import_export = st.tabs(
+    rvt_convert, upload, compliance, inspect, validate, map_tab, preview, import_export = st.tabs(
         [
             "RVT Convert",
-            "ODA 3D View",
             "Upload",
             "IFC Compliance",
             "Inspect",
@@ -151,8 +149,6 @@ def render_pipeline() -> None:
 
     with rvt_convert:
         render_rvt_convert_tab()
-    with oda_view:
-        render_oda_view_tab()
     with upload:
         render_upload_tab()
     with compliance:
@@ -379,46 +375,6 @@ def render_rvt_convert_tab() -> None:
     if st.session_state.rvt_json_probe_log:
         with st.expander("JSON probe log"):
             st.text(st.session_state.rvt_json_probe_log)
-
-
-def render_oda_view_tab() -> None:
-    st.subheader("ODA 3D View")
-    st.caption(
-        "Opens RVT/IFC files in ODA BimRv desktop viewer. "
-        "This is a local desktop viewer step, not an embedded web viewer."
-    )
-
-    viewer_path = detect_oda_bim_viewer(BASE_DIR)
-    if viewer_path:
-        st.success(f"Found ODA viewer: {_display_path(viewer_path)}")
-    else:
-        st.error("OdaBimApp.exe was not found. Check ODATrial installation.")
-
-    model_files = _list_viewable_model_files()
-    labels = [_display_path(path) for path in model_files]
-    selected_label = st.selectbox("Model file", labels, disabled=not labels)
-    selected_path = BASE_DIR / selected_label if selected_label else None
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Open Selected File In ODA Viewer", type="primary", disabled=not viewer_path or not selected_path):
-            try:
-                pid = launch_oda_bim_viewer(selected_path, viewer_path)
-                st.success(f"Opened ODA viewer process PID {pid}.")
-            except ODAViewerError as exc:
-                st.error(str(exc))
-    with col2:
-        if st.button("Open Empty ODA Viewer", disabled=not viewer_path):
-            try:
-                pid = launch_oda_bim_viewer(viewer_path=viewer_path)
-                st.success(f"Opened ODA viewer process PID {pid}.")
-            except ODAViewerError as exc:
-                st.error(str(exc))
-
-    st.info(
-        "For an embedded browser viewer, use a web format such as IFC loaded by Ifc.js, "
-        "or export DAE/glTF and render it with Three.js. The current ODA trial tools are native desktop apps."
-    )
 
 
 def render_ifc_compliance_tab() -> None:
@@ -855,23 +811,6 @@ def _objects_with_blank_asset_fields(objects: list[dict]) -> list[dict]:
         item.setdefault("asset_name", item.get("name", ""))
         normalized.append(item)
     return normalized
-
-
-def _list_viewable_model_files() -> list[Path]:
-    files: list[Path] = []
-    for folder in [INPUT_DIR, OUTPUT_DIR, BASE_DIR / "sample-data"]:
-        if folder.exists():
-            files.extend(folder.glob("*.rvt"))
-            files.extend(folder.glob("*.ifc"))
-    return sorted(files, key=lambda path: path.stat().st_mtime, reverse=True)
-
-
-def _display_path(path: str | Path) -> str:
-    resolved = Path(path).resolve()
-    try:
-        return str(resolved.relative_to(BASE_DIR))
-    except ValueError:
-        return str(resolved)
 
 
 def mark_failed(message: str) -> None:
