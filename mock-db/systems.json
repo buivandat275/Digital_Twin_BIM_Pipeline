@@ -18,5 +18,20 @@
     "system_id": "Window_System",
     "system_name": "Window System",
     "asset_type": "Window"
+  },
+  {
+    "system_id": "Beam_System",
+    "system_name": "Beam System",
+    "asset_type": "Beam"
+  },
+  {
+    "system_id": "Column_System",
+    "system_name": "Column System",
+    "asset_type": "Column"
+  },
+  {
+    "system_id": "Slab_System",
+    "system_name": "Slab System",
+    "asset_type": "Slab"
   }
 ]

@@ -28,9 +28,21 @@ from services.mapper import (
     default_mapping_dataframe,
     save_mapping,
 )
+from services.oda_viewer import ODAViewerError, detect_oda_bim_viewer, launch_oda_bim_viewer
+from services.rvt_converter import (
+    RVTConversionError,
+    convert_rvt_to_ifc,
+    convert_rvt_to_json,
+    default_output_ifc_path,
+    default_output_json_path,
+    get_default_converter_command,
+    get_default_json_export_command,
+    save_rvt_upload,
+)
 from services.validator import validate_assets
 
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).resolve().parent
+INPUT_DIR = BASE_DIR / "input"
 OUTPUT_DIR = BASE_DIR / "output"
 MOCK_DB_DIR = BASE_DIR / "mock-db"
 MAPPING_PATH = BASE_DIR / "rules" / "saved_mapping.json"
@@ -73,6 +85,13 @@ def init_state() -> None:
         "project_name": "FZK Haus Demo",
         "upload_info": {},
         "current_ifc_path": "",
+        "rvt_input_path": "",
+        "converted_ifc_path": "",
+        "rvt_json_probe_path": "",
+        "rvt_conversion_log": "",
+        "rvt_json_probe_log": "",
+        "rvt_converter_command": get_default_converter_command(),
+        "rvt_json_export_command": get_default_json_export_command(),
         "ifc_compliance_df": pd.DataFrame(),
         "ifc_compliance_summary": {
             "total_issues": 0,
@@ -116,8 +135,10 @@ def render_dashboard() -> None:
 
 def render_pipeline() -> None:
     st.title("BIM Pipeline / BIM Converter")
-    upload, compliance, inspect, validate, map_tab, preview, import_export = st.tabs(
+    rvt_convert, oda_view, upload, compliance, inspect, validate, map_tab, preview, import_export = st.tabs(
         [
+            "RVT Convert",
+            "ODA 3D View",
             "Upload",
             "IFC Compliance",
             "Inspect",
@@ -128,6 +149,10 @@ def render_pipeline() -> None:
         ]
     )
 
+    with rvt_convert:
+        render_rvt_convert_tab()
+    with oda_view:
+        render_oda_view_tab()
     with upload:
         render_upload_tab()
     with compliance:
@@ -167,35 +192,7 @@ def render_upload_tab() -> None:
                 file_path = sample_path
                 file_name = sample_path.name
 
-            st.session_state.upload_info = {
-                "project_id": st.session_state.project_id,
-                "project_name": st.session_state.project_name,
-                "file_name": file_name,
-                "upload_time": upload_time,
-                "processing_status": "Inspecting",
-            }
-            st.session_state.current_ifc_path = str(file_path)
-            st.session_state.ifc_compliance_df = pd.DataFrame()
-            st.session_state.ifc_compliance_summary = {
-                "total_issues": 0,
-                "errors": 0,
-                "warnings": 0,
-                "infos": 0,
-                "status": "Not run",
-                "engine": "",
-                "express_rules": False,
-            }
-            st.session_state.processing_status = "Inspecting"
-            objects, summary = parse_ifc_file(file_path, file_name)
-            st.session_state.objects = objects
-            st.session_state.cleaned_objects = []
-            st.session_state.correction_template_df = pd.DataFrame()
-            st.session_state.correction_log_df = pd.DataFrame()
-            st.session_state.preview_tables = {}
-            st.session_state.ifc_summary = summary
-            st.session_state.processing_status = "Inspecting"
-            st.session_state.last_error = ""
-            st.success(f"Loaded {len(objects)} BIM objects from {file_name}.")
+            load_ifc_into_session(file_path, file_name, upload_time)
         except IFCReadError as exc:
             mark_failed(str(exc))
             st.error(str(exc))
@@ -205,6 +202,223 @@ def render_upload_tab() -> None:
 
     if st.session_state.upload_info:
         st.dataframe(pd.DataFrame([st.session_state.upload_info]), use_container_width=True)
+
+
+def render_rvt_convert_tab() -> None:
+    st.subheader("RVT to IFC Converter")
+    st.caption(
+        "This prepares the RVT -> IFC step before APS is available. "
+        "Upload a .rvt file, then run a configured converter command. "
+        "After an IFC is produced, the app loads it into the existing BIM pipeline."
+    )
+
+    if not st.session_state.rvt_converter_command:
+        st.session_state.rvt_converter_command = get_default_converter_command()
+    if not st.session_state.rvt_json_export_command:
+        st.session_state.rvt_json_export_command = get_default_json_export_command()
+
+    st.session_state.project_id = st.text_input(
+        "project_id",
+        st.session_state.project_id,
+        key="rvt_project_id",
+    )
+    st.session_state.project_name = st.text_input(
+        "project_name",
+        st.session_state.project_name,
+        key="rvt_project_name",
+    )
+
+    existing_rvt_files = sorted(INPUT_DIR.glob("*.rvt"), key=lambda path: path.stat().st_mtime, reverse=True)
+    existing_rvt_labels = [""] + [path.name for path in existing_rvt_files]
+    selected_existing_rvt = st.selectbox(
+        "Use existing RVT from input/",
+        existing_rvt_labels,
+        help="Use this when the RVT file is already saved in the project input folder.",
+    )
+    if selected_existing_rvt:
+        selected_path = INPUT_DIR / selected_existing_rvt
+        st.session_state.rvt_input_path = str(selected_path)
+        st.session_state.converted_ifc_path = str(default_output_ifc_path(selected_path, OUTPUT_DIR))
+        st.session_state.rvt_json_probe_path = str(default_output_json_path(selected_path, OUTPUT_DIR))
+
+    uploaded_rvt = st.file_uploader("Upload RVT file", type=["rvt"], key="rvt_upload")
+    provider = st.selectbox(
+        "Converter provider",
+        ["ODA BimRv/IFC SDK", "Autodesk APS", "Custom command"],
+        help="Only command-based conversion is wired now. ODA can be connected once its trial executable or wrapper script is available.",
+    )
+    if provider == "ODA BimRv/IFC SDK":
+        st.info(
+            "After installing and activating ODA Trial, point this command to an ODA sample executable "
+            "or wrapper script that converts RVT to IFC. You can also set ODA_RVT_TO_IFC_COMMAND."
+        )
+    elif provider == "Autodesk APS":
+        st.info(
+            "APS is not available yet in this project because credentials/activity are pending. "
+            "Use ODA or Custom command for local conversion while waiting."
+        )
+    command = st.text_input(
+        "Converter command",
+        st.session_state.rvt_converter_command,
+        help=(
+            "Use {input} and {output} placeholders. "
+            "Example: C:\\Tools\\rvt2ifc.exe --input {input} --output {output}"
+        ),
+    )
+    st.session_state.rvt_converter_command = command
+
+    with st.expander("Fast ODA read probe"):
+        st.caption(
+            "Runs ODA BmJsonExportEx first. If this finishes quickly but IFC export hangs, "
+            "the bottleneck is the IFC generation step, not RVT loading."
+        )
+        json_command = st.text_input(
+            "JSON probe command",
+            st.session_state.rvt_json_export_command,
+            help="Use {input} and {output} placeholders.",
+        )
+        st.session_state.rvt_json_export_command = json_command
+        json_timeout_minutes = st.number_input(
+            "JSON probe timeout minutes",
+            min_value=1,
+            max_value=60,
+            value=5,
+            step=1,
+        )
+
+    timeout_minutes = st.number_input(
+        "Timeout minutes",
+        min_value=1,
+        max_value=480,
+        value=180,
+        step=5,
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Save RVT Upload"):
+            if uploaded_rvt is None:
+                st.warning("Upload a .rvt file first.")
+            else:
+                path = save_rvt_upload(uploaded_rvt, INPUT_DIR)
+                st.session_state.rvt_input_path = str(path)
+                st.session_state.converted_ifc_path = str(default_output_ifc_path(path, OUTPUT_DIR))
+                st.session_state.rvt_json_probe_path = str(default_output_json_path(path, OUTPUT_DIR))
+                st.success(f"Saved RVT to {path.relative_to(BASE_DIR)}")
+
+    with col2:
+        if st.button("Run Fast JSON Probe"):
+            if not st.session_state.rvt_input_path:
+                st.warning("Save an RVT upload first.")
+            else:
+                try:
+                    output_json = default_output_json_path(st.session_state.rvt_input_path, OUTPUT_DIR)
+                    with st.spinner("Checking whether ODA can read this RVT..."):
+                        json_path, log = convert_rvt_to_json(
+                            st.session_state.rvt_input_path,
+                            output_json,
+                            st.session_state.rvt_json_export_command,
+                            int(json_timeout_minutes * 60),
+                        )
+                    st.session_state.rvt_json_probe_path = str(json_path)
+                    st.session_state.rvt_json_probe_log = log
+                    st.success(f"ODA read probe finished: {json_path.name}")
+                except RVTConversionError as exc:
+                    st.error(str(exc))
+
+        if st.button("Run RVT -> IFC Conversion", type="primary"):
+            if not st.session_state.rvt_input_path:
+                st.warning("Save an RVT upload first.")
+            else:
+                try:
+                    output_ifc = default_output_ifc_path(st.session_state.rvt_input_path, OUTPUT_DIR)
+                    with st.spinner("Running external RVT converter..."):
+                        converted_path, log = convert_rvt_to_ifc(
+                            st.session_state.rvt_input_path,
+                            output_ifc,
+                            command,
+                            int(timeout_minutes * 60),
+                        )
+                    st.session_state.converted_ifc_path = str(converted_path)
+                    st.session_state.rvt_conversion_log = log
+                    load_ifc_into_session(
+                        converted_path,
+                        converted_path.name,
+                        datetime.now().isoformat(timespec="seconds"),
+                    )
+                    st.success(f"Converted and loaded IFC: {converted_path.name}")
+                except RVTConversionError as exc:
+                    st.error(str(exc))
+
+    status_rows = []
+    if st.session_state.rvt_input_path:
+        status_rows.append({"name": "RVT input", "path": st.session_state.rvt_input_path})
+    if st.session_state.converted_ifc_path:
+        status_rows.append({"name": "IFC output", "path": st.session_state.converted_ifc_path})
+    if st.session_state.rvt_json_probe_path:
+        status_rows.append({"name": "JSON probe output", "path": st.session_state.rvt_json_probe_path})
+    if status_rows:
+        st.dataframe(pd.DataFrame(status_rows), use_container_width=True, hide_index=True)
+
+    if st.session_state.converted_ifc_path and Path(st.session_state.converted_ifc_path).exists():
+        if st.button("Load Existing Converted IFC Into Pipeline"):
+            converted_path = Path(st.session_state.converted_ifc_path)
+            try:
+                load_ifc_into_session(
+                    converted_path,
+                    converted_path.name,
+                    datetime.now().isoformat(timespec="seconds"),
+                )
+                st.success(f"Loaded {converted_path.name} into BIM pipeline.")
+            except IFCReadError as exc:
+                st.error(str(exc))
+
+    if st.session_state.rvt_conversion_log:
+        with st.expander("Converter log"):
+            st.text(st.session_state.rvt_conversion_log)
+    if st.session_state.rvt_json_probe_log:
+        with st.expander("JSON probe log"):
+            st.text(st.session_state.rvt_json_probe_log)
+
+
+def render_oda_view_tab() -> None:
+    st.subheader("ODA 3D View")
+    st.caption(
+        "Opens RVT/IFC files in ODA BimRv desktop viewer. "
+        "This is a local desktop viewer step, not an embedded web viewer."
+    )
+
+    viewer_path = detect_oda_bim_viewer(BASE_DIR)
+    if viewer_path:
+        st.success(f"Found ODA viewer: {_display_path(viewer_path)}")
+    else:
+        st.error("OdaBimApp.exe was not found. Check ODATrial installation.")
+
+    model_files = _list_viewable_model_files()
+    labels = [_display_path(path) for path in model_files]
+    selected_label = st.selectbox("Model file", labels, disabled=not labels)
+    selected_path = BASE_DIR / selected_label if selected_label else None
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Open Selected File In ODA Viewer", type="primary", disabled=not viewer_path or not selected_path):
+            try:
+                pid = launch_oda_bim_viewer(selected_path, viewer_path)
+                st.success(f"Opened ODA viewer process PID {pid}.")
+            except ODAViewerError as exc:
+                st.error(str(exc))
+    with col2:
+        if st.button("Open Empty ODA Viewer", disabled=not viewer_path):
+            try:
+                pid = launch_oda_bim_viewer(viewer_path=viewer_path)
+                st.success(f"Opened ODA viewer process PID {pid}.")
+            except ODAViewerError as exc:
+                st.error(str(exc))
+
+    st.info(
+        "For an embedded browser viewer, use a web format such as IFC loaded by Ifc.js, "
+        "or export DAE/glTF and render it with Three.js. The current ODA trial tools are native desktop apps."
+    )
 
 
 def render_ifc_compliance_tab() -> None:
@@ -602,6 +816,37 @@ def render_settings() -> None:
     st.write({"output": str(OUTPUT_DIR), "mock_db": str(MOCK_DB_DIR), "mapping": str(MAPPING_PATH)})
 
 
+def load_ifc_into_session(file_path: str | Path, file_name: str, upload_time: str) -> None:
+    st.session_state.upload_info = {
+        "project_id": st.session_state.project_id,
+        "project_name": st.session_state.project_name,
+        "file_name": file_name,
+        "upload_time": upload_time,
+        "processing_status": "Inspecting",
+    }
+    st.session_state.current_ifc_path = str(file_path)
+    st.session_state.ifc_compliance_df = pd.DataFrame()
+    st.session_state.ifc_compliance_summary = {
+        "total_issues": 0,
+        "errors": 0,
+        "warnings": 0,
+        "infos": 0,
+        "status": "Not run",
+        "engine": "",
+        "express_rules": False,
+    }
+    st.session_state.processing_status = "Inspecting"
+    objects, summary = parse_ifc_file(file_path, file_name)
+    st.session_state.objects = objects
+    st.session_state.cleaned_objects = []
+    st.session_state.correction_template_df = pd.DataFrame()
+    st.session_state.correction_log_df = pd.DataFrame()
+    st.session_state.preview_tables = {}
+    st.session_state.ifc_summary = summary
+    st.session_state.last_error = ""
+    st.success(f"Loaded {len(objects)} BIM objects from {file_name}.")
+
+
 def _objects_with_blank_asset_fields(objects: list[dict]) -> list[dict]:
     normalized = []
     for obj in objects:
@@ -610,6 +855,23 @@ def _objects_with_blank_asset_fields(objects: list[dict]) -> list[dict]:
         item.setdefault("asset_name", item.get("name", ""))
         normalized.append(item)
     return normalized
+
+
+def _list_viewable_model_files() -> list[Path]:
+    files: list[Path] = []
+    for folder in [INPUT_DIR, OUTPUT_DIR, BASE_DIR / "sample-data"]:
+        if folder.exists():
+            files.extend(folder.glob("*.rvt"))
+            files.extend(folder.glob("*.ifc"))
+    return sorted(files, key=lambda path: path.stat().st_mtime, reverse=True)
+
+
+def _display_path(path: str | Path) -> str:
+    resolved = Path(path).resolve()
+    try:
+        return str(resolved.relative_to(BASE_DIR))
+    except ValueError:
+        return str(resolved)
 
 
 def mark_failed(message: str) -> None:

@@ -1,6 +1,6 @@
 # BIM Pipeline / BIM Converter PoC
 
-Python + Streamlit proof of concept for uploading IFC files, checking IFC compliance, inspecting BIM objects, validating Digital Twin fields, cleaning/mapping data, exporting correction templates, previewing normalized tables, exporting JSON/CSV/Excel, and importing into a local mock Digital Twin store.
+Python + Streamlit proof of concept for preparing RVT-to-IFC conversion, uploading IFC files, checking IFC compliance, inspecting BIM objects, validating Digital Twin fields, cleaning/mapping data, exporting correction templates, previewing normalized tables, exporting JSON/CSV/Excel, and importing into a local mock Digital Twin store.
 
 ## 1. Setup
 
@@ -49,8 +49,10 @@ In the app, open `BIM Pipeline / BIM Converter`, keep `Use bundled sample-data/A
 The Streamlit app uses this workflow:
 
 ```text
-Upload -> IFC Compliance -> Inspect -> Validate/Clean -> Map -> Preview -> Import/Export
+RVT Convert -> Upload -> IFC Compliance -> Inspect -> Validate/Clean -> Map -> Preview -> Import/Export
 ```
+
+`RVT Convert` is a converter adapter. It saves uploaded `.rvt` files to `input/` and can call an external converter command that produces an IFC file. The current PoC does not include a native RVT converter; connect APS, ODA, Revit API, or another converter by configuring a command with `{input}` and `{output}` placeholders.
 
 `IFC Compliance` checks IFC syntax/schema issues with IfcOpenShell's validator. This is the PoC-local equivalent of the first validation layer used by buildingSMART-style validation services.
 
@@ -62,6 +64,60 @@ The sidebar includes:
 - BIM Pipeline / BIM Converter
 - Imported Data
 - Settings / Rules
+
+### RVT To IFC Adapter
+
+The app can prepare an RVT conversion step before the IFC pipeline:
+
+```text
+Upload RVT
+-> save to input/
+-> run configured external converter
+-> output IFC to output/
+-> load IFC into the existing BIM pipeline
+```
+
+Configure the converter command in the UI or with an environment variable:
+
+```text
+RVT_TO_IFC_COMMAND="C:\Tools\rvt2ifc.exe --input {input} --output {output}"
+```
+
+This command can point to an APS wrapper script, ODA/Revit converter executable, .NET service CLI, or local script that calls a converter API. Without a configured converter, the tab will save the RVT file but cannot produce IFC.
+
+### Digital Twin Web Viewer
+
+The PoC also includes a separate browser viewer for the Digital Twin experience:
+
+```bash
+cd digital-twin-viewer
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+The viewer reads IFC files from `output/`, loads clean asset metadata from `mock-db/assets.json`, and lets you click IFC objects to inspect `GlobalId` and match Digital Twin metadata. Keep Streamlit for validation/clean/mapping/export, and use this viewer for the 3D/object-property workflow.
+
+For ODA, prefer a dedicated variable:
+
+```text
+ODA_RVT_TO_IFC_COMMAND="C:\ODA\YourWrapper\rvt_to_ifc.exe --input {input} --output {output}"
+```
+
+ODA Trial notes:
+
+- ODA Trial is currently listed as 60 days, 1 license per company, 1 desktop.
+- After applying and confirming email, ODA documentation is available.
+- C++ sample applications are typically in the `Exe` folder.
+- .NET sample applications are typically in the `Swig` folder.
+- Use the BimRv/Revit module for RVT access and the IFC module for IFC workflows.
+
+The exact executable name depends on the trial archive/modules you receive. Once installed, point `ODA_RVT_TO_IFC_COMMAND` to an ODA sample app or a small wrapper script that accepts `{input}` RVT and writes `{output}` IFC.
 
 ## 4. Outputs
 
@@ -76,6 +132,7 @@ Exports are written to `output/`:
 - `{project_id}_correction_template.csv`
 - `{project_id}_correction_template.xlsx`
 - `{project_id}_ifc_compliance_report.csv`
+- converted IFC files from the RVT adapter
 
 Mock Digital Twin imports are written to `mock-db/`:
 
@@ -95,7 +152,7 @@ The `Imported Data` page includes an `IFC Object -> Digital Twin Metadata Lookup
 ## 5. Acceptance Criteria Mapping
 
 - AC1: Sidebar menu has `BIM Pipeline / BIM Converter`.
-- AC2: Pipeline tabs implement Upload, IFC Compliance, Inspect, Validate/Clean, Map, Preview, Import/Export.
+- AC2: Pipeline tabs implement RVT Convert, Upload, IFC Compliance, Inspect, Validate/Clean, Map, Preview, Import/Export.
 - AC3: Upload tab captures `project_id`, `project_name`, IFC file/sample, file name, upload time, and status.
 - AC4: Inspect tab displays GlobalId, Name, IFC Class, Object Type, Property Set, Metadata, property count, and source file.
 - AC5: Validator checks required Digital Twin fields by profile, bad `IfcBuildingElementProxy` classification, and software-specific metadata.
