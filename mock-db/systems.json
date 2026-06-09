@@ -38,5 +38,25 @@
     "system_id": "Covering_System",
     "system_name": "Covering System",
     "asset_type": "Covering"
+  },
+  {
+    "system_id": "Structural_Member",
+    "system_name": "Structural Member",
+    "asset_type": "Member"
+  },
+  {
+    "system_id": "Plate_System",
+    "system_name": "Plate System",
+    "asset_type": "Plate"
+  },
+  {
+    "system_id": "Railing_System",
+    "system_name": "Railing System",
+    "asset_type": "Railing"
+  },
+  {
+    "system_id": "Stair_System",
+    "system_name": "Stair System",
+    "asset_type": "Stair"
   }
 ]

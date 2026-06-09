@@ -85,6 +85,37 @@ RVT_TO_IFC_COMMAND="C:\Tools\rvt2ifc.exe --input {input} --output {output}"
 
 This command can point to an APS wrapper script, ODA/Revit converter executable, .NET service CLI, or local script that calls a converter API. Without a configured converter, the tab will save the RVT file but cannot produce IFC.
 
+### Autodesk APS Cloud Adapter
+
+The `RVT Convert` tab can also use Autodesk Platform Services as a cloud translation/metadata adapter. Create an APS app, then add these values to `.env`:
+
+```text
+APS_CLIENT_ID=your_client_id
+APS_CLIENT_SECRET=your_client_secret
+APS_CALLBACK_URL=http://localhost:8000/api/aps/callback
+APS_BUCKET_KEY=dt-your-unique-demo-bucket
+APS_REGION=US
+```
+
+`APS_CLIENT_SECRET` must stay local and must not be committed. The current adapter uses server-to-server authentication, uploads the selected RVT/IFC to an APS OSS bucket, starts a Model Derivative translation, waits for the manifest, then writes an APS result JSON to `output/`.
+
+The APS tab has two output modes:
+
+- `SVF2 viewer metadata`: prepares a cloud derivative for Autodesk Viewer and extracts metadata/properties.
+- `IFC export`: asks Model Derivative to export RVT to IFC, downloads `{source}_aps.ifc` into `output/`, and loads it into the local pipeline when possible.
+
+APS output currently includes:
+
+- uploaded object info
+- derivative URN
+- translation job response
+- manifest
+- model metadata
+- object properties, if enabled
+- downloaded IFC path, when using `IFC export`
+
+This APS step does not edit the original IFC/RVT. It prepares cloud-derived metadata and a derivative URN for the next Digital Twin viewer integration step.
+
 ### Digital Twin Web Viewer
 
 The PoC also includes a separate browser viewer for the Digital Twin experience:
