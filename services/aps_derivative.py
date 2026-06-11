@@ -8,11 +8,13 @@ from typing import Any
 from urllib.parse import quote
 
 import requests
+from requests import RequestException
 
 from services.aps_auth import APSError, APSConfig, get_2legged_token, load_aps_config
 
 
 APS_BASE_URL = "https://developer.api.autodesk.com"
+DEFAULT_HTTP_TIMEOUT = 90
 
 
 def urn_from_object_id(object_id: str) -> str:
@@ -46,15 +48,16 @@ def start_translation(
         payload["input"]["rootFilename"] = root_filename
         payload["input"]["compressedUrn"] = False
 
-    response = requests.post(
+    response = _request_with_retry(
+        "post",
         f"{APS_BASE_URL}/modelderivative/v2/designdata/job",
+        "APS translation job request failed",
         headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
             "x-ads-force": "true",
         },
         json=payload,
-        timeout=60,
     )
     return _json_or_error(response, "APS translation job failed")
 
@@ -62,10 +65,11 @@ def start_translation(
 def get_manifest(urn: str, config: APSConfig | None = None) -> dict:
     config = config or load_aps_config()
     token = get_2legged_token(["data:read"], config)["access_token"]
-    response = requests.get(
+    response = _request_with_retry(
+        "get",
         f"{APS_BASE_URL}/modelderivative/v2/designdata/{urn}/manifest",
+        "APS manifest request failed",
         headers={"Authorization": f"Bearer {token}"},
-        timeout=60,
     )
     return _json_or_error(response, "APS manifest lookup failed")
 
@@ -78,9 +82,16 @@ def wait_for_manifest(
 ) -> dict:
     started = time.time()
     last_manifest: dict | None = None
+    last_poll_error: APSError | None = None
     while time.time() - started < timeout_seconds:
-        manifest = get_manifest(urn, config)
+        try:
+            manifest = get_manifest(urn, config)
+        except APSError as exc:
+            last_poll_error = exc
+            time.sleep(poll_seconds)
+            continue
         last_manifest = manifest
+        last_poll_error = None
         status = str(manifest.get("status", "")).lower()
         progress = str(manifest.get("progress", "")).lower()
         if status == "success":
@@ -88,16 +99,22 @@ def wait_for_manifest(
         if status == "failed" or "failed" in progress:
             raise APSError(f"APS translation failed: {manifest}")
         time.sleep(poll_seconds)
-    raise APSError(f"APS translation timed out after {timeout_seconds} seconds. Last manifest: {last_manifest}")
+    if last_manifest:
+        raise APSError(f"APS translation timed out after {timeout_seconds} seconds. Last manifest: {last_manifest}")
+    raise APSError(
+        f"APS translation timed out after {timeout_seconds} seconds before a manifest could be read. "
+        f"Last polling error: {last_poll_error}"
+    )
 
 
 def get_metadata(urn: str, config: APSConfig | None = None) -> dict:
     config = config or load_aps_config()
     token = get_2legged_token(["data:read"], config)["access_token"]
-    response = requests.get(
+    response = _request_with_retry(
+        "get",
         f"{APS_BASE_URL}/modelderivative/v2/designdata/{urn}/metadata",
+        "APS metadata request failed",
         headers={"Authorization": f"Bearer {token}"},
-        timeout=60,
     )
     return _json_or_error(response, "APS metadata lookup failed")
 
@@ -105,10 +122,13 @@ def get_metadata(urn: str, config: APSConfig | None = None) -> dict:
 def get_model_properties(urn: str, guid: str, config: APSConfig | None = None) -> dict:
     config = config or load_aps_config()
     token = get_2legged_token(["data:read"], config)["access_token"]
-    response = requests.get(
+    response = _request_with_retry(
+        "get",
         f"{APS_BASE_URL}/modelderivative/v2/designdata/{urn}/metadata/{guid}/properties",
+        "APS model properties request failed",
+        attempts=2,
+        timeout_seconds=300,
         headers={"Authorization": f"Bearer {token}"},
-        timeout=300,
     )
     return _json_or_error(response, "APS model properties lookup failed")
 
@@ -157,11 +177,14 @@ def download_derivative(
     token = get_2legged_token(["data:read"], config)["access_token"]
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    response = requests.get(
+    response = _request_with_retry(
+        "get",
         f"{APS_BASE_URL}/modelderivative/v2/designdata/{urn}/manifest/{quote(derivative_urn, safe='')}",
+        "APS derivative download request failed",
+        attempts=2,
+        timeout_seconds=600,
         headers={"Authorization": f"Bearer {token}"},
         stream=True,
-        timeout=600,
     )
     if not response.ok:
         try:
@@ -192,3 +215,22 @@ def _json_or_error(response: requests.Response, message: str) -> dict:
     except ValueError:
         detail = response.text
     raise APSError(f"{message}: HTTP {response.status_code} {detail}")
+
+
+def _request_with_retry(
+    method: str,
+    url: str,
+    message: str,
+    attempts: int = 3,
+    timeout_seconds: int = DEFAULT_HTTP_TIMEOUT,
+    **kwargs,
+) -> requests.Response:
+    last_error: RequestException | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return requests.request(method, url, timeout=timeout_seconds, **kwargs)
+        except RequestException as exc:
+            last_error = exc
+            if attempt < attempts:
+                time.sleep(min(2 * attempt, 6))
+    raise APSError(f"{message}: {last_error}") from last_error

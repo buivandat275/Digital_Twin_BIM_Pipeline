@@ -7,7 +7,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-
+BIM PipeLineDigital_Twin_v2026.06.10/
 # Local virtual environments
 .venv/
 venv/

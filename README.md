@@ -134,6 +134,13 @@ http://127.0.0.1:5173
 
 The viewer reads IFC files from `output/`, can import an IFC manually in the browser, loads clean asset metadata from `mock-db/assets.json`, and lets you click IFC objects to inspect old IFC/source properties beside new Digital Twin metadata. Keep Streamlit for validation/clean/mapping/export, and use this viewer for the 3D/object-property workflow.
 
+The viewer has two model modes:
+
+- `Local IFC`: loads `output/*.ifc` or manually imported IFC files with That Open/web-ifc.
+- `APS Cloud`: loads APS `URN` values from `output/*_aps_result.json` with Autodesk Viewer. Clicked APS objects show cloud properties and attempt to match clean DB metadata by GlobalId/IfcGUID when available.
+
+For APS Cloud mode, keep `.env` in the project root. The Vite dev server reads `APS_CLIENT_ID` and `APS_CLIENT_SECRET` server-side and exposes only short-lived viewer tokens through `/api/aps/token`.
+
 For ODA, prefer a dedicated variable:
 
 ```text

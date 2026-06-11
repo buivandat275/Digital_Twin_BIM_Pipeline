@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 import requests
+from requests import RequestException
 
 from services.aps_auth import APSError, APSConfig, get_2legged_token, load_aps_config
 
@@ -13,6 +14,7 @@ from services.aps_auth import APSError, APSConfig, get_2legged_token, load_aps_c
 APS_BASE_URL = "https://developer.api.autodesk.com"
 CHUNK_SIZE = 5 * 1024 * 1024
 MAX_SIGNED_URLS_PER_BATCH = 25
+DEFAULT_HTTP_TIMEOUT = 90
 
 
 def normalize_bucket_key(bucket_key: str) -> str:
@@ -30,25 +32,27 @@ def ensure_bucket(config: APSConfig | None = None) -> dict:
     token = get_2legged_token(["bucket:read", "bucket:create"], config)["access_token"]
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    get_response = requests.get(
+    get_response = _request_with_retry(
+        "get",
         f"{APS_BASE_URL}/oss/v2/buckets/{bucket_key}/details",
+        "APS bucket lookup request failed",
         headers={"Authorization": f"Bearer {token}"},
-        timeout=30,
     )
     if get_response.ok:
         return get_response.json()
     if get_response.status_code != 404:
         _raise_response(get_response, "APS bucket lookup failed")
 
-    create_response = requests.post(
+    create_response = _request_with_retry(
+        "post",
         f"{APS_BASE_URL}/oss/v2/buckets",
+        "APS bucket create request failed",
         headers=headers,
         json={
             "bucketKey": bucket_key,
             "policyKey": "transient",
             "region": config.region or "US",
         },
-        timeout=30,
     )
     if create_response.status_code == 409:
         return {"bucketKey": bucket_key, "status": "already_exists"}
@@ -118,11 +122,14 @@ def _upload_object_direct_to_s3(
                         raise APSError(f"APS signed upload response is missing uploadKey/urls: {signed}")
 
                 signed_url = upload_urls.pop(0)
-                response = requests.put(
+                response = _request_with_retry(
+                    "put",
                     signed_url,
+                    "APS S3 part upload request failed",
+                    attempts=2,
+                    timeout_seconds=600,
                     data=chunk,
                     headers={"Content-Type": content_type},
-                    timeout=600,
                 )
                 if response.status_code == 403:
                     upload_urls = []
@@ -154,14 +161,15 @@ def _get_signed_upload_urls(
     if upload_key:
         params["uploadKey"] = upload_key
 
-    response = requests.get(
+    response = _request_with_retry(
+        "get",
         f"{APS_BASE_URL}/oss/v2/buckets/{bucket_key}/objects/{quote(object_key, safe='')}/signeds3upload",
+        "APS signed S3 upload URL request failed",
         headers={
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
         },
         params=params,
-        timeout=60,
     )
     if not response.ok:
         _raise_response(response, "APS signed S3 upload URL request failed")
@@ -175,15 +183,16 @@ def _complete_signed_upload(
     upload_key: str,
     content_type: str,
 ) -> dict:
-    response = requests.post(
+    response = _request_with_retry(
+        "post",
         f"{APS_BASE_URL}/oss/v2/buckets/{bucket_key}/objects/{quote(object_key, safe='')}/signeds3upload",
+        "APS signed S3 upload complete request failed",
         headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
             "x-ads-meta-Content-Type": content_type,
         },
         json={"uploadKey": upload_key},
-        timeout=60,
     )
     if not response.ok:
         _raise_response(response, "APS signed S3 upload complete failed")
@@ -196,3 +205,24 @@ def _raise_response(response: requests.Response, message: str) -> None:
     except ValueError:
         detail = response.text
     raise APSError(f"{message}: HTTP {response.status_code} {detail}")
+
+
+def _request_with_retry(
+    method: str,
+    url: str,
+    message: str,
+    attempts: int = 3,
+    timeout_seconds: int = DEFAULT_HTTP_TIMEOUT,
+    **kwargs,
+) -> requests.Response:
+    last_error: RequestException | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return requests.request(method, url, timeout=timeout_seconds, **kwargs)
+        except RequestException as exc:
+            last_error = exc
+            if attempt < attempts:
+                import time
+
+                time.sleep(min(2 * attempt, 6))
+    raise APSError(f"{message}: {last_error}") from last_error

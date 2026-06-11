@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { Buffer } from "node:buffer";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -27,6 +28,35 @@ function readJson(filePath, fallback) {
   }
 }
 
+function readEnv(filePath) {
+  const env = {};
+  if (!fs.existsSync(filePath)) return env;
+  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const [key, ...valueParts] = trimmed.split("=");
+    env[key.trim().replace(/^\uFEFF/, "")] = valueParts.join("=").trim().replace(/^["']|["']$/g, "");
+  }
+  return env;
+}
+
+function readApsEnv() {
+  const candidates = [
+    path.join(projectRoot, ".env"),
+    path.join(path.dirname(projectRoot), ".env"),
+    path.join(process.cwd(), ".env"),
+  ];
+  const merged = { ...process.env };
+  for (const envPath of candidates) {
+    const env = readEnv(envPath);
+    for (const [key, value] of Object.entries(env)) {
+      if (value) merged[key] = value;
+    }
+  }
+  return { env: merged, candidates };
+}
+
 function listFiles(dir, extensions) {
   if (!fs.existsSync(dir)) return [];
   return fs
@@ -49,10 +79,70 @@ function sendJson(res, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function sendError(res, statusCode, message) {
+  res.statusCode = statusCode;
+  sendJson(res, { error: message });
+}
+
 function safeFilePath(baseDir, requestedName) {
   const resolved = path.resolve(baseDir, requestedName);
   if (!resolved.startsWith(path.resolve(baseDir))) return null;
   return resolved;
+}
+
+function listApsModels() {
+  if (!fs.existsSync(outputDir)) return [];
+  return fs
+    .readdirSync(outputDir)
+    .filter((name) => name.toLowerCase().endsWith("_aps_result.json"))
+    .map((name) => {
+      const fullPath = path.join(outputDir, name);
+      const stat = fs.statSync(fullPath);
+      const payload = readJson(fullPath, {});
+      const format = payload?.job?.acceptedJobs?.output?.formats?.[0]?.type || "";
+      return {
+        key: `aps:${name}`,
+        name,
+        sourceFile: payload.source_file || name.replace(/_aps_result\.json$/i, ""),
+        urn: payload.urn || "",
+        format,
+        size: stat.size,
+        updatedAt: stat.mtime.toISOString(),
+        status: payload?.manifest?.status || "",
+        progress: payload?.manifest?.progress || "",
+      };
+    })
+    .filter((item) => item.urn && item.format === "svf2")
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+}
+
+async function getApsViewerToken() {
+  const { env, candidates } = readApsEnv();
+  const clientId = env.APS_CLIENT_ID || "";
+  const clientSecret = env.APS_CLIENT_SECRET || "";
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      `APS_CLIENT_ID and APS_CLIENT_SECRET are required in .env. Checked: ${candidates.join(", ")}`,
+    );
+  }
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const response = await fetch("https://developer.api.autodesk.com/authentication/v2/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      scope: "viewables:read data:read",
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(`APS token failed: HTTP ${response.status} ${JSON.stringify(payload)}`);
+  }
+  return payload;
 }
 
 function digitalTwinApi() {
@@ -79,6 +169,18 @@ function digitalTwinApi() {
 
         if (url.pathname === "/api/properties") {
           sendJson(res, readJson(path.join(mockDbDir, "properties.json"), []));
+          return;
+        }
+
+        if (url.pathname === "/api/aps/models") {
+          sendJson(res, listApsModels());
+          return;
+        }
+
+        if (url.pathname === "/api/aps/token") {
+          getApsViewerToken()
+            .then((token) => sendJson(res, token))
+            .catch((error) => sendError(res, 500, error.message));
           return;
         }
 

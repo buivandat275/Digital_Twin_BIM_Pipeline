@@ -5,6 +5,7 @@ import {
   Box,
   Building2,
   CheckCircle2,
+  Cloud,
   Database,
   Eye,
   FileCode2,
@@ -87,6 +88,36 @@ function normalizeOdaProperties(properties = []) {
   return normalized;
 }
 
+function apsPropertiesToObject(properties = []) {
+  const normalized = {};
+  (properties || []).forEach((property) => {
+    const category = property.displayCategory || property.category || "Properties";
+    if (!normalized[category]) normalized[category] = {};
+    normalized[category][property.displayName || property.attributeName || property.name] = property.displayValue ?? property.value ?? "";
+  });
+  return normalized;
+}
+
+function getGlobalIdFromApsProperties(properties = [], externalId = "") {
+  const candidates = [
+    "GlobalId",
+    "Global ID",
+    "IfcGUID",
+    "IfcGuid",
+    "IFC GUID",
+    "IFCParameters.IfcGUID",
+    "Identity Data.GlobalId",
+  ];
+  for (const property of properties || []) {
+    const names = [property.displayName, property.attributeName, property.name].filter(Boolean);
+    if (names.some((name) => candidates.includes(name))) {
+      const value = property.displayValue ?? property.value;
+      if (value) return String(value);
+    }
+  }
+  return externalId || "";
+}
+
 function buildSourcePropertyIndex(payload) {
   const index = new Map();
 
@@ -138,9 +169,12 @@ function propertyRows(object, asset) {
 
 function App() {
   const [files, setFiles] = useState({ ifcFiles: [], metadataFiles: [] });
+  const [apsModels, setApsModels] = useState([]);
   const [uploadedIfcFiles, setUploadedIfcFiles] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [viewerMode, setViewerMode] = useState("ifc");
   const [selectedFileKey, setSelectedFileKey] = useState("");
+  const [selectedApsKey, setSelectedApsKey] = useState("");
   const [selectedObject, setSelectedObject] = useState(null);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [sourcePropertyIndex, setSourcePropertyIndex] = useState(new Map());
@@ -164,6 +198,10 @@ function App() {
     () => allIfcFiles.find((file) => file.key === selectedFileKey) || null,
     [allIfcFiles, selectedFileKey],
   );
+  const selectedApsModel = useMemo(
+    () => apsModels.find((file) => file.key === selectedApsKey) || null,
+    [apsModels, selectedApsKey],
+  );
   const assetIndex = useMemo(() => buildAssetIndex(assets), [assets]);
   const mappedAssets = useMemo(() => assets.filter((item) => item.source_global_id), [assets]);
   const filteredAssets = useMemo(() => {
@@ -182,12 +220,22 @@ function App() {
 
   useEffect(() => {
     async function bootstrap() {
-      const [fileRes, assetRes] = await Promise.all([fetch("/api/files"), fetch("/api/assets")]);
+      const [fileRes, assetRes, apsRes] = await Promise.all([
+        fetch("/api/files"),
+        fetch("/api/assets"),
+        fetch("/api/aps/models"),
+      ]);
       const fileData = await fileRes.json();
       const assetData = await assetRes.json();
+      const apsData = await apsRes.json();
       setFiles(fileData);
       setAssets(assetData);
+      setApsModels(apsData);
       if (fileData.ifcFiles?.length) setSelectedFileKey(`output:${fileData.ifcFiles[0].name}`);
+      if (apsData?.length) {
+        setSelectedApsKey(apsData[0].key);
+        setViewerMode("aps");
+      }
     }
     bootstrap().catch((error) => {
       setViewerState({ status: "Error", message: error.message, progress: 0 });
@@ -198,7 +246,7 @@ function App() {
     setSelectedObject(null);
     setSelectedAsset(null);
     setSelectedSourceProperties(null);
-    if (!selectedModel || selectedModel.source !== "output") {
+    if (viewerMode !== "ifc" || !selectedModel || selectedModel.source !== "output") {
       setSourcePropertyIndex(new Map());
       return;
     }
@@ -215,7 +263,7 @@ function App() {
     }
 
     loadSourceProperties().catch(() => setSourcePropertyIndex(new Map()));
-  }, [selectedModel]);
+  }, [selectedModel, viewerMode]);
 
   function handleIfcUpload(event) {
     const nextFiles = Array.from(event.target.files || [])
@@ -259,6 +307,24 @@ function App() {
         </div>
 
         <div className="model-picker">
+          <select className="mode-select" value={viewerMode} onChange={(event) => setViewerMode(event.target.value)}>
+            <option value="ifc">Local IFC</option>
+            <option value="aps">APS Cloud</option>
+          </select>
+          {viewerMode === "aps" && (
+            <>
+              <Cloud size={18} />
+              <select value={selectedApsKey} onChange={(event) => setSelectedApsKey(event.target.value)}>
+                {apsModels.map((file) => (
+                  <option value={file.key} key={file.key}>
+                    {file.sourceFile} - {file.format || "derivative"} - {file.status || "unknown"}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          {viewerMode === "ifc" && (
+            <>
           <FileCode2 size={18} />
           <select value={selectedFileKey} onChange={(event) => setSelectedFileKey(event.target.value)}>
             {allIfcFiles.map((file) => (
@@ -272,6 +338,8 @@ function App() {
             <Upload size={18} />
             <input type="file" accept=".ifc" multiple onChange={handleIfcUpload} />
           </label>
+            </>
+          )}
         </div>
       </header>
 
@@ -280,6 +348,7 @@ function App() {
           <section className="summary-band">
             <Metric icon={<Box size={18} />} label="IFC files" value={allIfcFiles.length} />
             <Metric icon={<Database size={18} />} label="Assets" value={assets.length} />
+            <Metric icon={<Cloud size={18} />} label="APS models" value={apsModels.length} />
           </section>
 
           <div className="search-box">
@@ -323,16 +392,29 @@ function App() {
             </button>
           </div>
 
-          <ThatOpenCanvas
-            ref={viewerRef}
-            modelFile={selectedModel}
-            onPicked={handleObjectPicked}
-            onStateChange={setViewerState}
-          />
+          {viewerMode === "aps" ? (
+            <ApsViewerCanvas
+              ref={viewerRef}
+              apsModel={selectedApsModel}
+              onPicked={handleObjectPicked}
+              onStateChange={setViewerState}
+            />
+          ) : (
+            <ThatOpenCanvas
+              ref={viewerRef}
+              modelFile={selectedModel}
+              onPicked={handleObjectPicked}
+              onStateChange={setViewerState}
+            />
+          )}
 
           <div className="viewer-hint">
             <MousePointer2 size={16} />
-            <span>Click an element to read IFC properties and match clean Digital Twin metadata.</span>
+            <span>
+              {viewerMode === "aps"
+                ? "Click an APS object to read cloud properties and match clean Digital Twin metadata."
+                : "Click an element to read IFC properties and match clean Digital Twin metadata."}
+            </span>
           </div>
         </section>
 
@@ -375,7 +457,12 @@ function App() {
             ))}
           </dl>
 
-          {selectedObject?.ifcProperties && <JsonBlock title="Old IFC Properties" value={selectedObject.ifcProperties} />}
+          {selectedObject?.ifcProperties && (
+            <JsonBlock
+              title={viewerMode === "aps" ? "Old APS Cloud Properties" : "Old IFC Properties"}
+              value={selectedObject.ifcProperties}
+            />
+          )}
           {selectedSourceProperties?.properties && (
             <JsonBlock title="Old Source Properties From ODA JSON" value={selectedSourceProperties.properties} />
           )}
@@ -431,6 +518,135 @@ function JsonBlock({ title, value }) {
     </section>
   );
 }
+
+const ApsViewerCanvas = React.forwardRef(function ApsViewerCanvas({ apsModel, onPicked, onStateChange }, ref) {
+  const containerRef = useRef(null);
+  const viewerRef = useRef(null);
+  const onPickedRef = useRef(onPicked);
+  const onStateChangeRef = useRef(onStateChange);
+
+  useEffect(() => {
+    onPickedRef.current = onPicked;
+  }, [onPicked]);
+
+  useEffect(() => {
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
+
+  React.useImperativeHandle(ref, () => ({
+    fitModel: () => viewerRef.current?.fitToView(),
+    resetCamera: () => viewerRef.current?.fitToView(),
+  }));
+
+  useEffect(() => {
+    let cancelled = false;
+    let viewer = null;
+
+    async function loadApsModel() {
+      if (!apsModel?.urn) {
+        onStateChangeRef.current({ status: "Idle", message: "Choose an APS result to start.", progress: 0 });
+        return;
+      }
+      if (!window.Autodesk?.Viewing) {
+        onStateChangeRef.current({
+          status: "Error",
+          message: "Autodesk Viewer SDK was not loaded. Check internet/CDN access.",
+          progress: 0,
+        });
+        return;
+      }
+      const container = containerRef.current;
+      if (!container) return;
+
+      onStateChangeRef.current({ status: "Loading", message: `Loading APS model ${apsModel.sourceFile}`, progress: 10 });
+      const options = {
+        env: "AutodeskProduction",
+        api: "derivativeV2",
+        getAccessToken: async (callback) => {
+          const response = await fetch("/api/aps/token");
+          const token = await response.json();
+          if (!response.ok) throw new Error(token.error || "APS token request failed");
+          callback(token.access_token, token.expires_in);
+        },
+      };
+
+      await new Promise((resolve, reject) => {
+        window.Autodesk.Viewing.Initializer(options, resolve, reject);
+      });
+      if (cancelled) return;
+
+      viewer = new window.Autodesk.Viewing.GuiViewer3D(container, {
+        extensions: ["Autodesk.DocumentBrowser"],
+      });
+      const started = viewer.start();
+      if (started > 0) throw new Error(`Autodesk Viewer failed to start: ${started}`);
+      viewerRef.current = viewer;
+
+      viewer.addEventListener(window.Autodesk.Viewing.SELECTION_CHANGED_EVENT, (event) => {
+        const dbId = event.dbIdArray?.[0];
+        if (!dbId) return;
+        viewer.getProperties(
+          dbId,
+          (props) => {
+            const apsProperties = apsPropertiesToObject(props.properties || []);
+            const globalId = getGlobalIdFromApsProperties(props.properties || [], props.externalId || "");
+            onPickedRef.current({
+              localId: dbId,
+              globalId,
+              ifcType: props.name || "APS object",
+              name: props.name || `APS object ${dbId}`,
+              ifcProperties: {
+                externalId: props.externalId || "",
+                dbId,
+                properties: apsProperties,
+              },
+            });
+            onStateChangeRef.current({
+              status: "Ready",
+              message: `Picked APS object ${globalId || props.externalId || dbId}`,
+              progress: 100,
+            });
+          },
+          (error) => {
+            onStateChangeRef.current({ status: "Error", message: `APS property read failed: ${error}`, progress: 0 });
+          },
+        );
+      });
+
+      await new Promise((resolve, reject) => {
+        window.Autodesk.Viewing.Document.load(
+          `urn:${apsModel.urn}`,
+          (doc) => {
+            const viewable = doc.getRoot().getDefaultGeometry();
+            viewer
+              .loadDocumentNode(doc, viewable)
+              .then(resolve)
+              .catch(reject);
+          },
+          (code, message) => reject(new Error(`APS document load failed: ${message || code}`)),
+        );
+      });
+      if (cancelled) return;
+      viewer.fitToView();
+      onStateChangeRef.current({ status: "Ready", message: `Loaded APS ${apsModel.sourceFile}`, progress: 100 });
+    }
+
+    loadApsModel().catch((error) => {
+      if (!cancelled) onStateChangeRef.current({ status: "Error", message: error.message, progress: 0 });
+    });
+
+    return () => {
+      cancelled = true;
+      if (viewer) {
+        viewer.finish();
+        viewer = null;
+      }
+      viewerRef.current = null;
+    };
+  }, [apsModel]);
+
+  return <div className="aps-viewer" ref={containerRef} />;
+});
 
 const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ modelFile, onPicked, onStateChange }, ref) {
   const containerRef = useRef(null);
