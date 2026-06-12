@@ -9,6 +9,7 @@ from rules.field_policy import get_template_fields, get_validated_fields
 
 IDENTITY_COLUMNS = [
     "source_global_id",
+    "ifc_guid",
     "object_name",
     "source_ifc_class",
     "object_type",
@@ -29,6 +30,7 @@ def build_correction_template(objects: list[dict], profile_name: str) -> pd.Data
 
         row = {
             "source_global_id": obj.get("global_id") or obj.get("source_global_id", ""),
+            "ifc_guid": obj.get("global_id") or obj.get("source_global_id", ""),
             "object_name": obj.get("asset_name") or obj.get("name", ""),
             "source_ifc_class": obj.get("ifc_class", ""),
             "object_type": obj.get("object_type", ""),
@@ -116,7 +118,7 @@ def merge_correction_template(
 def _index_corrections(correction_df: pd.DataFrame) -> dict[str, dict]:
     indexed = {}
     for row in correction_df.to_dict(orient="records"):
-        for key_field in ["source_global_id", "asset_id"]:
+        for key_field in ["source_global_id", "ifc_guid", "asset_id"]:
             value = str(row.get(key_field, "")).strip()
             if value:
                 indexed[value] = row

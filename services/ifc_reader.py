@@ -107,13 +107,54 @@ def parse_ifc_file(file_path: str | Path, source_file: str) -> tuple[list[dict],
                 "quantity_properties": quantities,
                 "source_reference": {"source_file": source_file, **source_reference},
                 "raw_metadata": raw_metadata,
-                "manufacturer": _lookup_property(property_sets, "Manufacturer"),
-                "model": _lookup_property(property_sets, "Model"),
-                "serial_number": _lookup_property(property_sets, "SerialNumber")
-                or _lookup_property(property_sets, "Serial Number"),
+                "asset_id": _lookup_any_property(property_sets, ["DT.Common.Asset Code", "Asset Code"]),
+                "dt_asset_code": _lookup_any_property(property_sets, ["DT.Common.Asset Code", "Asset Code"]),
+                "functional_location": _lookup_any_property(
+                    property_sets, ["DT.Common.Functional Location", "Functional Location"]
+                ),
+                "asset_tag_no": _lookup_any_property(property_sets, ["DT.Common.Asset Tag No.", "Asset Tag No."]),
+                "zone_tag_no": _lookup_any_property(property_sets, ["DT.Common.Zone Tag No.", "Zone Tag No."]),
+                "documentation": _lookup_any_property(property_sets, ["DT.Common.Documentation", "Documentation"]),
+                "manufacturer": _lookup_any_property(property_sets, ["DT.Common.Manufacturer", "Manufacturer"]),
+                "model": _lookup_any_property(property_sets, ["DT.Common.Model No.", "Model No.", "Model"]),
+                "serial_number": _lookup_any_property(property_sets, ["SerialNumber", "Serial Number"]),
+                "installation_date": _lookup_any_property(
+                    property_sets, ["DT.Common.Installation Date", "Installation Date", "InstallDate"]
+                ),
+                "warranty_start_date": _lookup_any_property(
+                    property_sets, ["DT.Common.Warranty Start Date", "Warranty Start Date"]
+                ),
+                "warranty_end_date": _lookup_any_property(
+                    property_sets, ["DT.Common.Warranty End Date", "Warranty End Date"]
+                ),
                 "warranty": _lookup_property(property_sets, "Warranty"),
                 "maintenance_info": _lookup_property(property_sets, "MaintenanceInfo")
                 or _lookup_property(property_sets, "Maintenance Info"),
+                "criticality": _lookup_any_property(property_sets, ["DT.Common.Criticality", "Criticality"]),
+                "maintainable": _lookup_any_property(property_sets, ["DT.Common.Maintainable", "Maintainable"]),
+                "maintenance_strategy": _lookup_any_property(
+                    property_sets, ["DT.Common.Maintenance Strategy", "Maintenance Strategy"]
+                ),
+                "expected_life_years": _lookup_any_property(
+                    property_sets, ["DT.Common.Expected Life Years", "Expected Life Years"]
+                ),
+                "cmms_asset_id": _lookup_any_property(property_sets, ["DT.Common.CMMS Asset ID", "CMMS Asset ID"]),
+                "spare_part_group": _lookup_any_property(property_sets, ["DT.Common.Spare Part Group", "Spare Part Group"]),
+                "manual_url": _lookup_any_property(property_sets, ["DT.Common.Manual URL", "Manual URL"]),
+                "device_id": _lookup_any_property(property_sets, ["DT.Common.Device ID", "Device ID"]),
+                "gateway_id": _lookup_any_property(property_sets, ["DT.Common.Gateway ID", "Gateway ID"]),
+                "protocol": _lookup_any_property(property_sets, ["DT.Common.Protocol", "Protocol"]),
+                "bms_device_id": _lookup_any_property(property_sets, ["DT.Common.BMS Device ID", "BMS Device ID"]),
+                "modbus_slave_id": _lookup_any_property(property_sets, ["DT.Common.Modbus Slave ID", "Modbus Slave ID"]),
+                "mqtt_topic": _lookup_any_property(property_sets, ["DT.Common.MQTT Topic", "MQTT Topic"]),
+                "rest_endpoint": _lookup_any_property(property_sets, ["DT.Common.REST Endpoint", "REST Endpoint"]),
+                "onvif_profile_url": _lookup_any_property(property_sets, ["DT.Common.ONVIF Profile URL", "ONVIF Profile URL"]),
+                "polling_interval_sec": _lookup_any_property(
+                    property_sets, ["DT.Common.Polling Interval Sec", "Polling Interval Sec"]
+                ),
+                "realtime_enabled": _lookup_any_property(property_sets, ["DT.Common.Realtime Enabled", "Realtime Enabled"]),
+                "history_enabled": _lookup_any_property(property_sets, ["DT.Common.History Enabled", "History Enabled"]),
+                "point_template": _lookup_any_property(property_sets, ["DT.Common.Point Template", "Point Template"]),
                 "status": _lookup_property(property_sets, "Status"),
             }
         )
@@ -131,6 +172,20 @@ def _lookup_property(property_sets: dict, key_name: str) -> Any:
     for props in property_sets.values():
         for key, value in props.items():
             if key.lower() == lowered:
+                return value
+    return ""
+
+
+def _lookup_any_property(property_sets: dict, key_names: list[str]) -> Any:
+    for key_name in key_names:
+        value = _lookup_property(property_sets, key_name)
+        if value:
+            return value
+    lowered_names = [key.lower().split(".")[-1].strip() for key in key_names]
+    for props in property_sets.values():
+        for key, value in props.items():
+            probe = key.lower().split(".")[-1].strip()
+            if probe in lowered_names and value:
                 return value
     return ""
 

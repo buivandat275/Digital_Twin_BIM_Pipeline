@@ -1,6 +1,6 @@
-# BIM Pipeline / BIM Converter PoC
+# BIM Pipeline / BIM Converter
 
-Python + Streamlit proof of concept for preparing RVT-to-IFC conversion, uploading IFC files, checking IFC compliance, inspecting BIM objects, validating Digital Twin fields, cleaning/mapping data, exporting correction templates, previewing normalized tables, exporting JSON/CSV/Excel, and importing into a local mock Digital Twin store.
+Python + Streamlit pipeline for preparing RVT-to-IFC conversion, uploading IFC files, checking IFC compliance, inspecting BIM objects, validating Digital Twin fields, cleaning/mapping data, exporting correction templates, previewing normalized tables, exporting JSON/CSV/Excel/DTP handover packages, and importing into a local Digital Twin store.
 
 ## 1. Setup
 
@@ -52,9 +52,9 @@ The Streamlit app uses this workflow:
 RVT Convert -> Upload -> IFC Compliance -> Inspect -> Validate/Clean -> Map -> Preview -> Import/Export
 ```
 
-`RVT Convert` is a converter adapter. It saves uploaded `.rvt` files to `input/` and can call an external converter command that produces an IFC file. The current PoC does not include a native RVT converter; connect APS, ODA, Revit API, or another converter by configuring a command with `{input}` and `{output}` placeholders.
+`RVT Convert` is a converter adapter. It saves uploaded `.rvt` files to `input/` and can call APS, ODA, Revit API, or another converter by configuring a command with `{input}` and `{output}` placeholders.
 
-`IFC Compliance` checks IFC syntax/schema issues with IfcOpenShell's validator. This is the PoC-local equivalent of the first validation layer used by buildingSMART-style validation services.
+`IFC Compliance` checks IFC syntax/schema issues with IfcOpenShell's validator. This is the local equivalent of the first validation layer used by buildingSMART-style validation services.
 
 `Validate/Clean` checks Digital Twin readiness with a selected field policy profile, then supports bulk correction templates for missing fields.
 
@@ -118,7 +118,7 @@ This APS step does not edit the original IFC/RVT. It prepares cloud-derived meta
 
 ### Digital Twin Web Viewer
 
-The PoC also includes a separate browser viewer for the Digital Twin experience:
+The project also includes a separate browser viewer for the Digital Twin experience:
 
 ```bash
 cd digital-twin-viewer
@@ -202,7 +202,7 @@ The `Imported Data` page includes an `IFC Object -> Digital Twin Metadata Lookup
 
 ## 6. Validation Layers
 
-The PoC separates validation into two layers:
+The pipeline separates validation into two layers:
 
 ```text
 IFC Compliance Validation
@@ -212,7 +212,7 @@ Digital Twin Data Quality Validation
 -> Is the BIM metadata sufficient for the target Digital Twin schema?
 ```
 
-The open-source `buildingSMART/validate` project is a Docker-based validation service with backend, worker, database, Redis, and frontend components. This PoC does not embed that whole service directly. Instead, the `IFC Compliance` tab runs local syntax/schema validation through `ifcopenshell.validate`, while the existing `Validate/Clean` tab keeps the Digital Twin readiness checks.
+The open-source `buildingSMART/validate` project is a Docker-based validation service with backend, worker, database, Redis, and frontend components. This project does not embed that whole service directly. Instead, the `IFC Compliance` tab runs local syntax/schema validation through `ifcopenshell.validate`, while the existing `Validate/Clean` tab keeps the Digital Twin readiness checks.
 
 ## 7. Clean And Correction Workflow
 
@@ -246,9 +246,54 @@ Available field policy profiles:
 
 The correction template is one row per object, not one row per error. Users can fill many missing fields for the same object in one CSV/Excel row.
 
-## 8. Direction 2: Keep IFC Original, Read Metadata From Store
+## 8. BIM PipelineDigital_Twin v2026.06.10 Alignment
 
-This PoC follows the external Digital Twin store approach:
+The project includes an implementation layer aligned with the documents in `BIM PipeLineDigital_Twin_v2026.06.10/`:
+
+- Asset IDs are generated with the 7-part DT convention: `Area-Building-Block-Floor-System-Equipment-Sequence`.
+- IFC object identity is preserved with `ifc_guid` / `source_global_id`; object names are not used as primary keys.
+- The `DTP Handover` validation profile checks minimum handover LOI fields such as asset code, system code, IFC GlobalId, criticality, and maintainability.
+- Correction templates include both `source_global_id` and `ifc_guid` to support bulk enrichment by object.
+- Device, point, gateway, BMS mapping, and CMMS rows are generated from maintainable/realtime-capable assets. Generated BMS rows are marked pending live test until real commissioning IDs are confirmed.
+- Import/Export includes `Export DTP Handover`, which writes:
+  - `{project_id}_DTP_handover.xlsx`
+  - `{project_id}_DTP_handover.json`
+
+The DTP handover workbook includes the key master sheets from the guideline:
+
+```text
+01_Project_Facility
+02_SourceModels
+03_Floors
+04_Spaces
+05_Zones
+06_IFC_Objects
+07_IFC_Metadata_EAV
+08_Asset_IFC_Mapping
+09_Assets
+10_Devices
+11_Points
+12_Gateways
+13_BMS_Mapping
+14_CMMS_O&M
+15_Documents
+16_FieldDictionary
+17_NamingRules
+18_Standards_Assessment
+19_Checklist
+```
+
+Environment variables can override the generated DT asset code prefixes:
+
+```text
+DT_AREA_CODE=KT
+DT_BUILDING_CODE=DTHQ
+DT_BLOCK_CODE=NA
+```
+
+## 9. Direction 2: Keep IFC Original, Read Metadata From Store
+
+This project follows the external Digital Twin store approach:
 
 ```text
 Original IFC
@@ -269,6 +314,6 @@ selected IFC GlobalId
 -> show clean asset/system/location/property metadata
 ```
 
-## 9. Notes
+## 10. Notes
 
-This is a PoC only. It does not modify the original IFC file. The included `digital-twin-viewer` is a browser-based 3D inspection surface for IFC geometry, old IFC/source properties, and clean mock Digital Twin metadata. For production, rules should be externalized into JSON/YAML profiles and the correction workflow should include audit history and approval.
+The pipeline does not modify the original IFC file. The included `digital-twin-viewer` is a browser-based 3D inspection surface for IFC geometry, old IFC/source properties, and clean Digital Twin metadata. For deployment, keep rules/profile files versioned, add audit history for correction approvals, and connect the exported handover package to the target DTP/CMMS/BMS integration layer.

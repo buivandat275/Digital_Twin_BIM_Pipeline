@@ -15,6 +15,7 @@ from services.correction_template import (
     load_correction_file,
     merge_correction_template,
 )
+from services.dtp_exporter import build_dtp_handover, export_dtp_excel, export_dtp_json
 from services.exporter import export_csv, export_excel, export_json
 from services.ifc_compliance_validator import (
     IFCComplianceValidationError,
@@ -62,7 +63,7 @@ def main() -> None:
     st.set_page_config(page_title="BIM Pipeline / BIM Converter", layout="wide")
     init_state()
 
-    st.sidebar.title("Digital Twin PoC")
+    st.sidebar.title("Digital Twin Pipeline")
     page = st.sidebar.radio(
         "Menu",
         ["Dashboard", "BIM Pipeline / BIM Converter", "Imported Data", "Settings / Rules"],
@@ -123,7 +124,7 @@ def init_state() -> None:
 
 def render_dashboard() -> None:
     st.title("BIM Pipeline / BIM Converter")
-    st.caption("PoC for IFC upload, inspection, validation, mapping, export, and mock Digital Twin import.")
+    st.caption("IFC upload, compliance validation, metadata correction, DTP handover export, and Digital Twin import.")
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Status", st.session_state.processing_status)
@@ -821,7 +822,7 @@ def render_import_export_tab() -> None:
         st.info("Build preview tables first.")
         return
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         if st.button("Export JSON"):
             path = export_json(tables, OUTPUT_DIR, st.session_state.project_id)
@@ -838,6 +839,22 @@ def render_import_export_tab() -> None:
             st.session_state.processing_status = "Exported"
             st.success(f"Exported {path.name}")
     with col4:
+        if st.button("Export DTP Handover"):
+            dtp_tables = build_dtp_handover(
+                tables,
+                st.session_state.project_id,
+                st.session_state.project_name,
+            )
+            excel_path = export_dtp_excel(dtp_tables, OUTPUT_DIR, st.session_state.project_id)
+            json_path = export_dtp_json(
+                dtp_tables,
+                OUTPUT_DIR,
+                st.session_state.project_id,
+                st.session_state.project_name,
+            )
+            st.session_state.processing_status = "Exported"
+            st.success(f"Exported {excel_path.name} and {json_path.name}")
+    with col5:
         if st.button("Import to Mock Digital Twin", type="primary"):
             counts = import_to_mock_store(tables, MOCK_DB_DIR)
             st.session_state.processing_status = "Imported"
