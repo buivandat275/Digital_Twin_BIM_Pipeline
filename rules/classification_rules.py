@@ -74,6 +74,56 @@ CLASSIFICATION_RULES = {
         "discipline": "Unknown",
         "system": "Needs Review",
     },
+    "IfcAudioVisualAppliance": {
+        "asset_type": "Camera",
+        "discipline": "Electrical",
+        "system": "CCTV System",
+    },
+    "IfcLightFixture": {
+        "asset_type": "Light Fixture",
+        "discipline": "Electrical",
+        "system": "Lighting System",
+    },
+    "IfcSensor": {
+        "asset_type": "Sensor",
+        "discipline": "Electrical",
+        "system": "BMS Sensor System",
+    },
+    "IfcAlarm": {
+        "asset_type": "Alarm",
+        "discipline": "Fire Protection",
+        "system": "Fire Alarm System",
+    },
+    "IfcController": {
+        "asset_type": "Controller",
+        "discipline": "Electrical",
+        "system": "Building Management System",
+    },
+    "IfcUnitaryEquipment": {
+        "asset_type": "Air Handling Unit",
+        "discipline": "Mechanical",
+        "system": "HVAC System",
+    },
+    "IfcFan": {
+        "asset_type": "Fan",
+        "discipline": "Mechanical",
+        "system": "Ventilation System",
+    },
+    "IfcPump": {
+        "asset_type": "Pump",
+        "discipline": "Mechanical",
+        "system": "Hydronic System",
+    },
+    "IfcAirTerminal": {
+        "asset_type": "Air Terminal",
+        "discipline": "Mechanical",
+        "system": "Ventilation System",
+    },
+    "IfcFlowTerminal": {
+        "asset_type": "Flow Terminal",
+        "discipline": "Plumbing",
+        "system": "Plumbing System",
+    },
 }
 
 DISCIPLINE_CODES = {
@@ -101,6 +151,16 @@ ASSET_TYPE_CODES = {
     "Assembly": "ASM",
     "Stair": "STAIR",
     "Railing": "RAIL",
+    "Camera": "CAM",
+    "Light Fixture": "LIGHT",
+    "Sensor": "SENSOR",
+    "Alarm": "ALARM",
+    "Controller": "CTRL",
+    "Air Handling Unit": "AHU",
+    "Fan": "FAN",
+    "Pump": "PUMP",
+    "Air Terminal": "AIRTERM",
+    "Flow Terminal": "FLOWTERM",
     "Unknown": "UNK",
 }
 

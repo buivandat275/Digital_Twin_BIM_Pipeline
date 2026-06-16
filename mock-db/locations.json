@@ -208,5 +208,19 @@
     "location": "Level TOP",
     "floor": "Level TOP",
     "room_zone": ""
+  },
+  {
+    "location_id": "Single-family_house",
+    "building": "Single-family house",
+    "location": "Single-family house",
+    "floor": "UNK",
+    "room_zone": ""
+  },
+  {
+    "location_id": "00_groundfloor",
+    "building": "Single-family house",
+    "location": "00 groundfloor",
+    "floor": "00 groundfloor",
+    "room_zone": ""
   }
 ]
