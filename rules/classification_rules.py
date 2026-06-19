@@ -114,6 +114,11 @@ CLASSIFICATION_RULES = {
         "discipline": "Mechanical",
         "system": "Hydronic System",
     },
+    "IfcFlowMeter": {
+        "asset_type": "Electric Meter",
+        "discipline": "Electrical",
+        "system": "Electrical Metering System",
+    },
     "IfcAirTerminal": {
         "asset_type": "Air Terminal",
         "discipline": "Mechanical",
@@ -159,6 +164,7 @@ ASSET_TYPE_CODES = {
     "Air Handling Unit": "AHU",
     "Fan": "FAN",
     "Pump": "PUMP",
+    "Electric Meter": "METER",
     "Air Terminal": "AIRTERM",
     "Flow Terminal": "FLOWTERM",
     "Unknown": "UNK",

@@ -1,0 +1,34 @@
+[
+  {
+    "technician_id": "TECH-SEC-01",
+    "name": "Nguyen Minh",
+    "specialties": ["Security", "Electrical"],
+    "current_zone": "North Corridor",
+    "position": { "x": 4200, "y": 3400, "z": 0, "unit": "mm" },
+    "availability": "Available"
+  },
+  {
+    "technician_id": "TECH-HVAC-01",
+    "name": "Tran Quang",
+    "specialties": ["HVAC", "Mechanical"],
+    "current_zone": "Mechanical Area",
+    "position": { "x": 17100, "y": 4500, "z": 0, "unit": "mm" },
+    "availability": "Available"
+  },
+  {
+    "technician_id": "TECH-ELEC-01",
+    "name": "Le Anh",
+    "specialties": ["Electrical", "Fire Safety"],
+    "current_zone": "Electrical Riser",
+    "position": { "x": 19800, "y": 4100, "z": 0, "unit": "mm" },
+    "availability": "Available"
+  },
+  {
+    "technician_id": "TECH-FIRE-01",
+    "name": "Pham Hai",
+    "specialties": ["Fire Safety", "Security"],
+    "current_zone": "South Corridor",
+    "position": { "x": 10800, "y": 2800, "z": 0, "unit": "mm" },
+    "availability": "Busy"
+  }
+]

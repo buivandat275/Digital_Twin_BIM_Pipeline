@@ -1,0 +1,5746 @@
+{
+  "source_ifc": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+  "floor": "Level 9",
+  "generated_at": "2026-06-16T16:46:39.057Z",
+  "coordinate_system": {
+    "unit": "mm",
+    "note": "2D floorplan is derived from IFC mesh bounding boxes projected top-down into the same x/y plane used by operations-assets.json.",
+    "model_to_asset_mapping": "asset.x = model.x * 1000; asset.y = -model.z * 1000"
+  },
+  "bounds": {
+    "minX": -1000,
+    "maxX": 33700,
+    "minY": -2199,
+    "maxY": 17650
+  },
+  "layers": {
+    "slabs": [
+      {
+        "id": 31447,
+        "name": "Floor:ARC_50mm:452413",
+        "ifc_class": "IfcSlab",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO97",
+        "polygon": [
+          {
+            "x": -400,
+            "y": 17050
+          },
+          {
+            "x": 33100,
+            "y": 17050
+          },
+          {
+            "x": 33100,
+            "y": -1599
+          },
+          {
+            "x": -400,
+            "y": -1599
+          }
+        ]
+      },
+      {
+        "id": 32122,
+        "name": "Floor:ARC_50mm (400x400):452582:9",
+        "ifc_class": "IfcSlab",
+        "global_id": "3UYOxnBbkdWqj0ys9xkp$c",
+        "polygon": [
+          {
+            "x": 21650,
+            "y": 7100
+          },
+          {
+            "x": 23490,
+            "y": 7100
+          },
+          {
+            "x": 23490,
+            "y": 4510
+          },
+          {
+            "x": 21650,
+            "y": 4510
+          }
+        ]
+      },
+      {
+        "id": 32123,
+        "name": "Floor:ARC_50mm (400x400):452582:10",
+        "ifc_class": "IfcSlab",
+        "global_id": "3$lIqOwxlO2EMu3gCXgNfa",
+        "polygon": [
+          {
+            "x": 23710,
+            "y": 7100
+          },
+          {
+            "x": 25550,
+            "y": 7100
+          },
+          {
+            "x": 25550,
+            "y": 4510
+          },
+          {
+            "x": 23710,
+            "y": 4510
+          }
+        ]
+      },
+      {
+        "id": 32121,
+        "name": "Floor:ARC_50mm (400x400):452582:8",
+        "ifc_class": "IfcSlab",
+        "global_id": "3fXYRVKwcnHGuhwNrZLkxB",
+        "polygon": [
+          {
+            "x": 15710,
+            "y": 7100
+          },
+          {
+            "x": 17550,
+            "y": 7100
+          },
+          {
+            "x": 17550,
+            "y": 4510
+          },
+          {
+            "x": 15710,
+            "y": 4510
+          }
+        ]
+      },
+      {
+        "id": 32119,
+        "name": "Floor:ARC_50mm (400x400):452582:6",
+        "ifc_class": "IfcSlab",
+        "global_id": "2m$j1GrRd19cBVWYrBsfEm",
+        "polygon": [
+          {
+            "x": 7710,
+            "y": 7100
+          },
+          {
+            "x": 9550,
+            "y": 7100
+          },
+          {
+            "x": 9550,
+            "y": 4510
+          },
+          {
+            "x": 7710,
+            "y": 4510
+          }
+        ]
+      },
+      {
+        "id": 32120,
+        "name": "Floor:ARC_50mm (400x400):452582:7",
+        "ifc_class": "IfcSlab",
+        "global_id": "2657AcPy$qCR$2eKygcQcc",
+        "polygon": [
+          {
+            "x": 13650,
+            "y": 7100
+          },
+          {
+            "x": 15490,
+            "y": 7100
+          },
+          {
+            "x": 15490,
+            "y": 4510
+          },
+          {
+            "x": 13650,
+            "y": 4510
+          }
+        ]
+      },
+      {
+        "id": 32124,
+        "name": "Floor:ARC_50mm (400x400):452582:11",
+        "ifc_class": "IfcSlab",
+        "global_id": "3Om3BsEQuPRnxaaOM9EQLr",
+        "polygon": [
+          {
+            "x": 27710,
+            "y": 7100
+          },
+          {
+            "x": 29550,
+            "y": 7100
+          },
+          {
+            "x": 29550,
+            "y": 4510
+          },
+          {
+            "x": 27710,
+            "y": 4510
+          }
+        ]
+      },
+      {
+        "id": 32116,
+        "name": "Floor:ARC_50mm (400x400):452582:3",
+        "ifc_class": "IfcSlab",
+        "global_id": "11DC4m8WKRUeH$eRBDoWOj",
+        "polygon": [
+          {
+            "x": 19800,
+            "y": 11850
+          },
+          {
+            "x": 21640,
+            "y": 11850
+          },
+          {
+            "x": 21640,
+            "y": 9320
+          },
+          {
+            "x": 19800,
+            "y": 9320
+          }
+        ]
+      },
+      {
+        "id": 32117,
+        "name": "Floor:ARC_50mm (400x400):452582:4",
+        "ifc_class": "IfcSlab",
+        "global_id": "2wOhry0XUldY4P4vxqSyPt",
+        "polygon": [
+          {
+            "x": 27710,
+            "y": 11850
+          },
+          {
+            "x": 29550,
+            "y": 11850
+          },
+          {
+            "x": 29550,
+            "y": 9320
+          },
+          {
+            "x": 27710,
+            "y": 9320
+          }
+        ]
+      },
+      {
+        "id": 32118,
+        "name": "Floor:ARC_50mm (400x400):452582:5",
+        "ifc_class": "IfcSlab",
+        "global_id": "3fMkyyP_dVUnGPYswIDumq",
+        "polygon": [
+          {
+            "x": 25650,
+            "y": 11850
+          },
+          {
+            "x": 27490,
+            "y": 11850
+          },
+          {
+            "x": 27490,
+            "y": 9320
+          },
+          {
+            "x": 25650,
+            "y": 9320
+          }
+        ]
+      },
+      {
+        "id": 32114,
+        "name": "Floor:ARC_50mm (400x400):452582",
+        "ifc_class": "IfcSlab",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOAS",
+        "polygon": [
+          {
+            "x": 9650,
+            "y": 11850
+          },
+          {
+            "x": 11490,
+            "y": 11850
+          },
+          {
+            "x": 11490,
+            "y": 9320
+          },
+          {
+            "x": 9650,
+            "y": 9320
+          }
+        ]
+      },
+      {
+        "id": 32115,
+        "name": "Floor:ARC_50mm (400x400):452582:2",
+        "ifc_class": "IfcSlab",
+        "global_id": "268h_$jRjtA4dtrqmR4DK0",
+        "polygon": [
+          {
+            "x": 11710,
+            "y": 11850
+          },
+          {
+            "x": 13550,
+            "y": 11850
+          },
+          {
+            "x": 13550,
+            "y": 9320
+          },
+          {
+            "x": 11710,
+            "y": 9320
+          }
+        ]
+      }
+    ],
+    "walls": [
+      {
+        "id": 13904,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:363219",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0gYz",
+        "polygon": [
+          {
+            "x": 4800,
+            "y": -659
+          },
+          {
+            "x": 7725,
+            "y": -659
+          },
+          {
+            "x": 7725,
+            "y": -1300
+          },
+          {
+            "x": 4800,
+            "y": -1300
+          }
+        ]
+      },
+      {
+        "id": 41157,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453210",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyW",
+        "polygon": [
+          {
+            "x": 4800,
+            "y": -659
+          },
+          {
+            "x": 7725,
+            "y": -659
+          },
+          {
+            "x": 7725,
+            "y": -1300
+          },
+          {
+            "x": 4800,
+            "y": -1300
+          }
+        ]
+      },
+      {
+        "id": 28827,
+        "name": "Basic Wall:02.Wall - 300mm - Fn15/Str270/Fn15:394747",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXLPb",
+        "polygon": [
+          {
+            "x": -400,
+            "y": 13000
+          },
+          {
+            "x": -100,
+            "y": 13000
+          },
+          {
+            "x": -100,
+            "y": 7100
+          },
+          {
+            "x": -400,
+            "y": 7100
+          }
+        ]
+      },
+      {
+        "id": 48765,
+        "name": "Basic Wall:02.Wall - 300mm - Fn15/Str270/Fn15:453712",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOag",
+        "polygon": [
+          {
+            "x": -400,
+            "y": 13000
+          },
+          {
+            "x": -100,
+            "y": 13000
+          },
+          {
+            "x": -100,
+            "y": 7100
+          },
+          {
+            "x": -400,
+            "y": 7100
+          }
+        ]
+      },
+      {
+        "id": 12384,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:357890",
+        "ifc_class": "IfcWall",
+        "global_id": "1tv8jvi7vDMfHecTlaZAKf",
+        "polygon": [
+          {
+            "x": 11475,
+            "y": 6625
+          },
+          {
+            "x": 11725,
+            "y": 6625
+          },
+          {
+            "x": 11725,
+            "y": -200
+          },
+          {
+            "x": 11475,
+            "y": -200
+          }
+        ]
+      },
+      {
+        "id": 40615,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453188",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOy_",
+        "polygon": [
+          {
+            "x": 11475,
+            "y": 6625
+          },
+          {
+            "x": 11725,
+            "y": 6625
+          },
+          {
+            "x": 11725,
+            "y": -200
+          },
+          {
+            "x": 11475,
+            "y": -200
+          }
+        ]
+      },
+      {
+        "id": 17774,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:371531",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSus",
+        "polygon": [
+          {
+            "x": 19475,
+            "y": 6625
+          },
+          {
+            "x": 19725,
+            "y": 6625
+          },
+          {
+            "x": 19725,
+            "y": -200
+          },
+          {
+            "x": 19475,
+            "y": -200
+          }
+        ]
+      },
+      {
+        "id": 43092,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453346",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_O",
+        "polygon": [
+          {
+            "x": 19475,
+            "y": 6625
+          },
+          {
+            "x": 19725,
+            "y": 6625
+          },
+          {
+            "x": 19725,
+            "y": -200
+          },
+          {
+            "x": 19475,
+            "y": -200
+          }
+        ]
+      },
+      {
+        "id": 1248,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:325964",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6AffB",
+        "polygon": [
+          {
+            "x": 11475,
+            "y": 16600
+          },
+          {
+            "x": 11725,
+            "y": 16600
+          },
+          {
+            "x": 11725,
+            "y": 9920
+          },
+          {
+            "x": 11475,
+            "y": 9920
+          }
+        ]
+      },
+      {
+        "id": 8095,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:347595",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbWN",
+        "polygon": [
+          {
+            "x": 27475,
+            "y": 16600
+          },
+          {
+            "x": 27725,
+            "y": 16600
+          },
+          {
+            "x": 27725,
+            "y": 9920
+          },
+          {
+            "x": 27475,
+            "y": 9920
+          }
+        ]
+      },
+      {
+        "id": 32417,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452657",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOrB",
+        "polygon": [
+          {
+            "x": 11475,
+            "y": 16600
+          },
+          {
+            "x": 11725,
+            "y": 16600
+          },
+          {
+            "x": 11725,
+            "y": 9920
+          },
+          {
+            "x": 11475,
+            "y": 9920
+          }
+        ]
+      },
+      {
+        "id": 36951,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452906",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnG",
+        "polygon": [
+          {
+            "x": 27475,
+            "y": 16600
+          },
+          {
+            "x": 27725,
+            "y": 16600
+          },
+          {
+            "x": 27725,
+            "y": 9920
+          },
+          {
+            "x": 27475,
+            "y": 9920
+          }
+        ]
+      },
+      {
+        "id": 19433,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:371830",
+        "ifc_class": "IfcWall",
+        "global_id": "145$iJP7j18uA04PAv6J4i",
+        "polygon": [
+          {
+            "x": 27475,
+            "y": 6625
+          },
+          {
+            "x": 27725,
+            "y": 6625
+          },
+          {
+            "x": 27725,
+            "y": 300
+          },
+          {
+            "x": 27475,
+            "y": 300
+          }
+        ]
+      },
+      {
+        "id": 44758,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453450",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOum",
+        "polygon": [
+          {
+            "x": 27475,
+            "y": 6625
+          },
+          {
+            "x": 27725,
+            "y": 6625
+          },
+          {
+            "x": 27725,
+            "y": 300
+          },
+          {
+            "x": 27475,
+            "y": 300
+          }
+        ]
+      },
+      {
+        "id": 5609,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:336319",
+        "ifc_class": "IfcWall",
+        "global_id": "2RJqJVvtDA1QTP08NMeFUp",
+        "polygon": [
+          {
+            "x": 18470,
+            "y": 17035
+          },
+          {
+            "x": 18720,
+            "y": 17035
+          },
+          {
+            "x": 18720,
+            "y": 10990
+          },
+          {
+            "x": 18470,
+            "y": 10990
+          }
+        ]
+      },
+      {
+        "id": 34539,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452807",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOsz",
+        "polygon": [
+          {
+            "x": 18470,
+            "y": 17035
+          },
+          {
+            "x": 18720,
+            "y": 17035
+          },
+          {
+            "x": 18720,
+            "y": 10990
+          },
+          {
+            "x": 18470,
+            "y": 10990
+          }
+        ]
+      },
+      {
+        "id": 14935,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:368064",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0h_k",
+        "polygon": [
+          {
+            "x": 15475,
+            "y": 6500
+          },
+          {
+            "x": 15725,
+            "y": 6500
+          },
+          {
+            "x": 15725,
+            "y": 500
+          },
+          {
+            "x": 15475,
+            "y": 500
+          }
+        ]
+      },
+      {
+        "id": 42074,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453245",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOy7",
+        "polygon": [
+          {
+            "x": 15475,
+            "y": 6500
+          },
+          {
+            "x": 15725,
+            "y": 6500
+          },
+          {
+            "x": 15725,
+            "y": 500
+          },
+          {
+            "x": 15475,
+            "y": 500
+          }
+        ]
+      },
+      {
+        "id": 10293,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:354923",
+        "ifc_class": "IfcWall",
+        "global_id": "1tv8jvi7vDMfHecTlaZBb0",
+        "polygon": [
+          {
+            "x": 7475,
+            "y": 6500
+          },
+          {
+            "x": 7725,
+            "y": 6500
+          },
+          {
+            "x": 7725,
+            "y": 500
+          },
+          {
+            "x": 7475,
+            "y": 500
+          }
+        ]
+      },
+      {
+        "id": 39059,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453104",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOoA",
+        "polygon": [
+          {
+            "x": 7475,
+            "y": 6500
+          },
+          {
+            "x": 7725,
+            "y": 6500
+          },
+          {
+            "x": 7725,
+            "y": 500
+          },
+          {
+            "x": 7475,
+            "y": 500
+          }
+        ]
+      },
+      {
+        "id": 18398,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:371548",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSuX",
+        "polygon": [
+          {
+            "x": 23475,
+            "y": 6500
+          },
+          {
+            "x": 23725,
+            "y": 6500
+          },
+          {
+            "x": 23725,
+            "y": 500
+          },
+          {
+            "x": 23475,
+            "y": 500
+          }
+        ]
+      },
+      {
+        "id": 43716,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453363",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_9",
+        "polygon": [
+          {
+            "x": 23475,
+            "y": 6500
+          },
+          {
+            "x": 23725,
+            "y": 6500
+          },
+          {
+            "x": 23725,
+            "y": 500
+          },
+          {
+            "x": 23475,
+            "y": 500
+          }
+        ]
+      },
+      {
+        "id": 3136,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:330543",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6AsWe",
+        "polygon": [
+          {
+            "x": 15565,
+            "y": 14800
+          },
+          {
+            "x": 15815,
+            "y": 14800
+          },
+          {
+            "x": 15815,
+            "y": 9570
+          },
+          {
+            "x": 15565,
+            "y": 9570
+          }
+        ]
+      },
+      {
+        "id": 34011,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452730",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOq0",
+        "polygon": [
+          {
+            "x": 15565,
+            "y": 14800
+          },
+          {
+            "x": 15815,
+            "y": 14800
+          },
+          {
+            "x": 15815,
+            "y": 9570
+          },
+          {
+            "x": 15565,
+            "y": 9570
+          }
+        ]
+      },
+      {
+        "id": 8051,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:347493",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbYv",
+        "polygon": [
+          {
+            "x": 23475,
+            "y": 14800
+          },
+          {
+            "x": 23725,
+            "y": 14800
+          },
+          {
+            "x": 23725,
+            "y": 9570
+          },
+          {
+            "x": 23475,
+            "y": 9570
+          }
+        ]
+      },
+      {
+        "id": 36907,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452905",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnJ",
+        "polygon": [
+          {
+            "x": 23475,
+            "y": 14800
+          },
+          {
+            "x": 23725,
+            "y": 14800
+          },
+          {
+            "x": 23725,
+            "y": 9570
+          },
+          {
+            "x": 23475,
+            "y": 9570
+          }
+        ]
+      },
+      {
+        "id": 28871,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:394992",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXLLk",
+        "polygon": [
+          {
+            "x": 2700,
+            "y": 13000
+          },
+          {
+            "x": 2920,
+            "y": 13000
+          },
+          {
+            "x": 2920,
+            "y": 7100
+          },
+          {
+            "x": 2700,
+            "y": 7100
+          }
+        ]
+      },
+      {
+        "id": 48809,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453713",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOah",
+        "polygon": [
+          {
+            "x": 2700,
+            "y": 13000
+          },
+          {
+            "x": 2920,
+            "y": 13000
+          },
+          {
+            "x": 2920,
+            "y": 7100
+          },
+          {
+            "x": 2700,
+            "y": 7100
+          }
+        ]
+      },
+      {
+        "id": 5290,
+        "name": "Basic Wall:02.Wall - 235mm - Fn15/Str205/Fn15 2:332716",
+        "ifc_class": "IfcWall",
+        "global_id": "2RJqJVvtDA1QTP08NMeCMW",
+        "polygon": [
+          {
+            "x": 7490,
+            "y": 14800
+          },
+          {
+            "x": 7725,
+            "y": 14800
+          },
+          {
+            "x": 7725,
+            "y": 9570
+          },
+          {
+            "x": 7490,
+            "y": 9570
+          }
+        ]
+      },
+      {
+        "id": 34269,
+        "name": "Basic Wall:02.Wall - 235mm - Fn15/Str205/Fn15 2:452799",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOt5",
+        "polygon": [
+          {
+            "x": 7490,
+            "y": 14800
+          },
+          {
+            "x": 7725,
+            "y": 14800
+          },
+          {
+            "x": 7725,
+            "y": 9570
+          },
+          {
+            "x": 7490,
+            "y": 9570
+          }
+        ]
+      },
+      {
+        "id": 5478,
+        "name": "Basic Wall:02.Wall - 300mm - Fn15/Str270/Fn15:334850",
+        "ifc_class": "IfcWall",
+        "global_id": "2RJqJVvtDA1QTP08NMeCeE",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 9370
+          },
+          {
+            "x": 7400,
+            "y": 9370
+          },
+          {
+            "x": 7400,
+            "y": 9070
+          },
+          {
+            "x": 4900,
+            "y": 9070
+          }
+        ]
+      },
+      {
+        "id": 34423,
+        "name": "Basic Wall:02.Wall - 300mm - Fn15/Str270/Fn15:452804",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOs_",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 9370
+          },
+          {
+            "x": 7400,
+            "y": 9370
+          },
+          {
+            "x": 7400,
+            "y": 9070
+          },
+          {
+            "x": 4900,
+            "y": 9070
+          }
+        ]
+      },
+      {
+        "id": 26188,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:390959",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXgIn",
+        "polygon": [
+          {
+            "x": -385,
+            "y": 17050
+          },
+          {
+            "x": 3000,
+            "y": 17050
+          },
+          {
+            "x": 3000,
+            "y": 16830
+          },
+          {
+            "x": -385,
+            "y": 16830
+          }
+        ]
+      },
+      {
+        "id": 47800,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453676",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnObM",
+        "polygon": [
+          {
+            "x": -385,
+            "y": 17050
+          },
+          {
+            "x": 3000,
+            "y": 17050
+          },
+          {
+            "x": 3000,
+            "y": 16830
+          },
+          {
+            "x": -385,
+            "y": 16830
+          }
+        ]
+      },
+      {
+        "id": 26232,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:391270",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXglu",
+        "polygon": [
+          {
+            "x": 4800,
+            "y": 17050
+          },
+          {
+            "x": 7710,
+            "y": 17050
+          },
+          {
+            "x": 7710,
+            "y": 16830
+          },
+          {
+            "x": 4800,
+            "y": 16830
+          }
+        ]
+      },
+      {
+        "id": 47844,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453677",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnObN",
+        "polygon": [
+          {
+            "x": 4800,
+            "y": 17050
+          },
+          {
+            "x": 7710,
+            "y": 17050
+          },
+          {
+            "x": 7710,
+            "y": 16830
+          },
+          {
+            "x": 4800,
+            "y": 16830
+          }
+        ]
+      },
+      {
+        "id": 1554,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:326915",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6Afu4",
+        "polygon": [
+          {
+            "x": 9525,
+            "y": 11975
+          },
+          {
+            "x": 13660,
+            "y": 11975
+          },
+          {
+            "x": 13660,
+            "y": 11835
+          },
+          {
+            "x": 9525,
+            "y": 11835
+          }
+        ]
+      },
+      {
+        "id": 8340,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:347600",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbWC",
+        "polygon": [
+          {
+            "x": 25525,
+            "y": 11975
+          },
+          {
+            "x": 29660,
+            "y": 11975
+          },
+          {
+            "x": 29660,
+            "y": 11835
+          },
+          {
+            "x": 25525,
+            "y": 11835
+          }
+        ]
+      },
+      {
+        "id": 32688,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452662",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOrC",
+        "polygon": [
+          {
+            "x": 9525,
+            "y": 11975
+          },
+          {
+            "x": 13660,
+            "y": 11975
+          },
+          {
+            "x": 13660,
+            "y": 11835
+          },
+          {
+            "x": 9525,
+            "y": 11835
+          }
+        ]
+      },
+      {
+        "id": 37178,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452910",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnK",
+        "polygon": [
+          {
+            "x": 25525,
+            "y": 11975
+          },
+          {
+            "x": 29660,
+            "y": 11975
+          },
+          {
+            "x": 29660,
+            "y": 11835
+          },
+          {
+            "x": 25525,
+            "y": 11835
+          }
+        ]
+      },
+      {
+        "id": 26801,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:392991",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXgo1",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 13240
+          },
+          {
+            "x": 7505,
+            "y": 13240
+          },
+          {
+            "x": 7505,
+            "y": 13020
+          },
+          {
+            "x": 4900,
+            "y": 13020
+          }
+        ]
+      },
+      {
+        "id": 48354,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453700",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOa_",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 13240
+          },
+          {
+            "x": 7505,
+            "y": 13240
+          },
+          {
+            "x": 7505,
+            "y": 13020
+          },
+          {
+            "x": 4900,
+            "y": 13020
+          }
+        ]
+      },
+      {
+        "id": 26619,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:392019",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXgZD",
+        "polygon": [
+          {
+            "x": 4915,
+            "y": 15800
+          },
+          {
+            "x": 7200,
+            "y": 15800
+          },
+          {
+            "x": 7200,
+            "y": 15580
+          },
+          {
+            "x": 4915,
+            "y": 15580
+          }
+        ]
+      },
+      {
+        "id": 48172,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453696",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOaw",
+        "polygon": [
+          {
+            "x": 4915,
+            "y": 15800
+          },
+          {
+            "x": 7200,
+            "y": 15800
+          },
+          {
+            "x": 7200,
+            "y": 15580
+          },
+          {
+            "x": 4915,
+            "y": 15580
+          }
+        ]
+      },
+      {
+        "id": 26757,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:392532",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXgxA",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 15500
+          },
+          {
+            "x": 5120,
+            "y": 15500
+          },
+          {
+            "x": 5120,
+            "y": 13240
+          },
+          {
+            "x": 4900,
+            "y": 13240
+          }
+        ]
+      },
+      {
+        "id": 48310,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453699",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOav",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 15500
+          },
+          {
+            "x": 5120,
+            "y": 15500
+          },
+          {
+            "x": 5120,
+            "y": 13240
+          },
+          {
+            "x": 4900,
+            "y": 13240
+          }
+        ]
+      },
+      {
+        "id": 5528,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:335071",
+        "ifc_class": "IfcWall",
+        "global_id": "2RJqJVvtDA1QTP08NMeChJ",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 12940
+          },
+          {
+            "x": 5010,
+            "y": 12940
+          },
+          {
+            "x": 5010,
+            "y": 9085
+          },
+          {
+            "x": 4900,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 34473,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:452805",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOs$",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 12940
+          },
+          {
+            "x": 5010,
+            "y": 12940
+          },
+          {
+            "x": 5010,
+            "y": 9085
+          },
+          {
+            "x": 4900,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 1786,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:327681",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6AsC6",
+        "polygon": [
+          {
+            "x": 7990,
+            "y": 9585
+          },
+          {
+            "x": 9665,
+            "y": 9585
+          },
+          {
+            "x": 9665,
+            "y": 9335
+          },
+          {
+            "x": 7990,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 32920,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452667",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOr1",
+        "polygon": [
+          {
+            "x": 7990,
+            "y": 9585
+          },
+          {
+            "x": 9665,
+            "y": 9585
+          },
+          {
+            "x": 9665,
+            "y": 9335
+          },
+          {
+            "x": 7990,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 7539,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:345495",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREb1B",
+        "polygon": [
+          {
+            "x": 18785,
+            "y": 11975
+          },
+          {
+            "x": 21765,
+            "y": 11975
+          },
+          {
+            "x": 21765,
+            "y": 11835
+          },
+          {
+            "x": 18785,
+            "y": 11835
+          }
+        ]
+      },
+      {
+        "id": 36410,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452895",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnb",
+        "polygon": [
+          {
+            "x": 18785,
+            "y": 11975
+          },
+          {
+            "x": 21765,
+            "y": 11975
+          },
+          {
+            "x": 21765,
+            "y": 11835
+          },
+          {
+            "x": 18785,
+            "y": 11835
+          }
+        ]
+      },
+      {
+        "id": 7137,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:342058",
+        "ifc_class": "IfcWall",
+        "global_id": "2RJqJVvtDA1QTP08NMeEuc",
+        "polygon": [
+          {
+            "x": 17340,
+            "y": 9225
+          },
+          {
+            "x": 20315,
+            "y": 9225
+          },
+          {
+            "x": 20315,
+            "y": 9085
+          },
+          {
+            "x": 17340,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 36008,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452870",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOny",
+        "polygon": [
+          {
+            "x": 17340,
+            "y": 9225
+          },
+          {
+            "x": 20315,
+            "y": 9225
+          },
+          {
+            "x": 20315,
+            "y": 9085
+          },
+          {
+            "x": 17340,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 8572,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:347605",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbW9",
+        "polygon": [
+          {
+            "x": 23900,
+            "y": 9585
+          },
+          {
+            "x": 25540,
+            "y": 9585
+          },
+          {
+            "x": 25540,
+            "y": 9335
+          },
+          {
+            "x": 23900,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 37410,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452915",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOn9",
+        "polygon": [
+          {
+            "x": 23900,
+            "y": 9585
+          },
+          {
+            "x": 25540,
+            "y": 9585
+          },
+          {
+            "x": 25540,
+            "y": 9335
+          },
+          {
+            "x": 23900,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 1456,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:326761",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6Afzk",
+        "polygon": [
+          {
+            "x": 13535,
+            "y": 11975
+          },
+          {
+            "x": 13675,
+            "y": 11975
+          },
+          {
+            "x": 13675,
+            "y": 9100
+          },
+          {
+            "x": 13535,
+            "y": 9100
+          }
+        ]
+      },
+      {
+        "id": 32605,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452661",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOrF",
+        "polygon": [
+          {
+            "x": 13535,
+            "y": 11975
+          },
+          {
+            "x": 13675,
+            "y": 11975
+          },
+          {
+            "x": 13675,
+            "y": 9100
+          },
+          {
+            "x": 13535,
+            "y": 9100
+          }
+        ]
+      },
+      {
+        "id": 8390,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:347601",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbWD",
+        "polygon": [
+          {
+            "x": 25525,
+            "y": 11960
+          },
+          {
+            "x": 25665,
+            "y": 11960
+          },
+          {
+            "x": 25665,
+            "y": 9100
+          },
+          {
+            "x": 25525,
+            "y": 9100
+          }
+        ]
+      },
+      {
+        "id": 37228,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452911",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnL",
+        "polygon": [
+          {
+            "x": 25525,
+            "y": 11960
+          },
+          {
+            "x": 25665,
+            "y": 11960
+          },
+          {
+            "x": 25665,
+            "y": 9100
+          },
+          {
+            "x": 25525,
+            "y": 9100
+          }
+        ]
+      },
+      {
+        "id": 1604,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:327020",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6Afvh",
+        "polygon": [
+          {
+            "x": 9525,
+            "y": 11960
+          },
+          {
+            "x": 9665,
+            "y": 11960
+          },
+          {
+            "x": 9665,
+            "y": 9100
+          },
+          {
+            "x": 9525,
+            "y": 9100
+          }
+        ]
+      },
+      {
+        "id": 32738,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452663",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOrD",
+        "polygon": [
+          {
+            "x": 9525,
+            "y": 11960
+          },
+          {
+            "x": 9665,
+            "y": 11960
+          },
+          {
+            "x": 9665,
+            "y": 9100
+          },
+          {
+            "x": 9525,
+            "y": 9100
+          }
+        ]
+      },
+      {
+        "id": 1292,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:326231",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6AfbG",
+        "polygon": [
+          {
+            "x": 9525,
+            "y": 9335
+          },
+          {
+            "x": 11115,
+            "y": 9335
+          },
+          {
+            "x": 11115,
+            "y": 9085
+          },
+          {
+            "x": 9525,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 8139,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:347596",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbWG",
+        "polygon": [
+          {
+            "x": 25525,
+            "y": 9335
+          },
+          {
+            "x": 27115,
+            "y": 9335
+          },
+          {
+            "x": 27115,
+            "y": 9085
+          },
+          {
+            "x": 25525,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 13468,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:361145",
+        "ifc_class": "IfcWall",
+        "global_id": "1tv8jvi7vDMfHecTlaZ56I",
+        "polygon": [
+          {
+            "x": 28085,
+            "y": 9335
+          },
+          {
+            "x": 29675,
+            "y": 9335
+          },
+          {
+            "x": 29675,
+            "y": 9085
+          },
+          {
+            "x": 28085,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 12428,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:359558",
+        "ifc_class": "IfcWall",
+        "global_id": "1tv8jvi7vDMfHecTlaZA_j",
+        "polygon": [
+          {
+            "x": 12085,
+            "y": 9335
+          },
+          {
+            "x": 13675,
+            "y": 9335
+          },
+          {
+            "x": 13675,
+            "y": 9085
+          },
+          {
+            "x": 12085,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 17809,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:371532",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSun",
+        "polygon": [
+          {
+            "x": 16000,
+            "y": 7515
+          },
+          {
+            "x": 17260,
+            "y": 7515
+          },
+          {
+            "x": 17260,
+            "y": 7200
+          },
+          {
+            "x": 16000,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 43127,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:453347",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_P",
+        "polygon": [
+          {
+            "x": 16000,
+            "y": 7515
+          },
+          {
+            "x": 17260,
+            "y": 7515
+          },
+          {
+            "x": 17260,
+            "y": 7200
+          },
+          {
+            "x": 16000,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 7816,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:346792",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbzq",
+        "polygon": [
+          {
+            "x": 21750,
+            "y": 9585
+          },
+          {
+            "x": 23300,
+            "y": 9585
+          },
+          {
+            "x": 23300,
+            "y": 9335
+          },
+          {
+            "x": 21750,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 36687,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452900",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnU",
+        "polygon": [
+          {
+            "x": 21750,
+            "y": 9585
+          },
+          {
+            "x": 23300,
+            "y": 9585
+          },
+          {
+            "x": 23300,
+            "y": 9335
+          },
+          {
+            "x": 21750,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 1362,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:326462",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6AfWv",
+        "polygon": [
+          {
+            "x": 13660,
+            "y": 9585
+          },
+          {
+            "x": 15200,
+            "y": 9585
+          },
+          {
+            "x": 15200,
+            "y": 9335
+          },
+          {
+            "x": 13660,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 32511,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452659",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOr9",
+        "polygon": [
+          {
+            "x": 13660,
+            "y": 9585
+          },
+          {
+            "x": 15200,
+            "y": 9585
+          },
+          {
+            "x": 15200,
+            "y": 9335
+          },
+          {
+            "x": 13660,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 36995,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452907",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnH",
+        "polygon": [
+          {
+            "x": 25525,
+            "y": 9335
+          },
+          {
+            "x": 27045,
+            "y": 9335
+          },
+          {
+            "x": 27045,
+            "y": 9085
+          },
+          {
+            "x": 25525,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 40659,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453197",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyt",
+        "polygon": [
+          {
+            "x": 12155,
+            "y": 9335
+          },
+          {
+            "x": 13675,
+            "y": 9335
+          },
+          {
+            "x": 13675,
+            "y": 9085
+          },
+          {
+            "x": 12155,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 32461,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452658",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOr8",
+        "polygon": [
+          {
+            "x": 9525,
+            "y": 9335
+          },
+          {
+            "x": 11045,
+            "y": 9335
+          },
+          {
+            "x": 11045,
+            "y": 9085
+          },
+          {
+            "x": 9525,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 40787,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453201",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyh",
+        "polygon": [
+          {
+            "x": 28155,
+            "y": 9335
+          },
+          {
+            "x": 29675,
+            "y": 9335
+          },
+          {
+            "x": 29675,
+            "y": 9085
+          },
+          {
+            "x": 28155,
+            "y": 9085
+          }
+        ]
+      },
+      {
+        "id": 6987,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:341138",
+        "ifc_class": "IfcWall",
+        "global_id": "2RJqJVvtDA1QTP08NMeEAU",
+        "polygon": [
+          {
+            "x": 15820,
+            "y": 9585
+          },
+          {
+            "x": 17340,
+            "y": 9585
+          },
+          {
+            "x": 17340,
+            "y": 9335
+          },
+          {
+            "x": 15820,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 35858,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452867",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnv",
+        "polygon": [
+          {
+            "x": 15820,
+            "y": 9585
+          },
+          {
+            "x": 17340,
+            "y": 9585
+          },
+          {
+            "x": 17340,
+            "y": 9335
+          },
+          {
+            "x": 15820,
+            "y": 9335
+          }
+        ]
+      },
+      {
+        "id": 14984,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:368065",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0h_l",
+        "polygon": [
+          {
+            "x": 13940,
+            "y": 7500
+          },
+          {
+            "x": 15200,
+            "y": 7500
+          },
+          {
+            "x": 15200,
+            "y": 7200
+          },
+          {
+            "x": 13940,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 42123,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:453246",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOy4",
+        "polygon": [
+          {
+            "x": 13940,
+            "y": 7500
+          },
+          {
+            "x": 15200,
+            "y": 7500
+          },
+          {
+            "x": 15200,
+            "y": 7200
+          },
+          {
+            "x": 13940,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 13653,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:361807",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0gSX",
+        "polygon": [
+          {
+            "x": 8000,
+            "y": 7500
+          },
+          {
+            "x": 9260,
+            "y": 7500
+          },
+          {
+            "x": 9260,
+            "y": 7200
+          },
+          {
+            "x": 8000,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 40930,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:453205",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyl",
+        "polygon": [
+          {
+            "x": 8000,
+            "y": 7500
+          },
+          {
+            "x": 9260,
+            "y": 7500
+          },
+          {
+            "x": 9260,
+            "y": 7200
+          },
+          {
+            "x": 8000,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 18447,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:371549",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSuW",
+        "polygon": [
+          {
+            "x": 21940,
+            "y": 7500
+          },
+          {
+            "x": 23200,
+            "y": 7500
+          },
+          {
+            "x": 23200,
+            "y": 7200
+          },
+          {
+            "x": 21940,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 19597,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:371835",
+        "ifc_class": "IfcWall",
+        "global_id": "145$iJP7j18uA04PAv6J4X",
+        "polygon": [
+          {
+            "x": 24000,
+            "y": 7500
+          },
+          {
+            "x": 25260,
+            "y": 7500
+          },
+          {
+            "x": 25260,
+            "y": 7200
+          },
+          {
+            "x": 24000,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 43765,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:453364",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_E",
+        "polygon": [
+          {
+            "x": 21940,
+            "y": 7500
+          },
+          {
+            "x": 23200,
+            "y": 7500
+          },
+          {
+            "x": 23200,
+            "y": 7200
+          },
+          {
+            "x": 21940,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 44922,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:453454",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOuq",
+        "polygon": [
+          {
+            "x": 24000,
+            "y": 7500
+          },
+          {
+            "x": 25260,
+            "y": 7500
+          },
+          {
+            "x": 25260,
+            "y": 7200
+          },
+          {
+            "x": 24000,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 15137,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:368068",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0h_g",
+        "polygon": [
+          {
+            "x": 13525,
+            "y": 7015
+          },
+          {
+            "x": 13665,
+            "y": 7015
+          },
+          {
+            "x": 13665,
+            "y": 4400
+          },
+          {
+            "x": 13525,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 42276,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453249",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO$x",
+        "polygon": [
+          {
+            "x": 13525,
+            "y": 7015
+          },
+          {
+            "x": 13665,
+            "y": 7015
+          },
+          {
+            "x": 13665,
+            "y": 4400
+          },
+          {
+            "x": 13525,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 17944,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:371535",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSuo",
+        "polygon": [
+          {
+            "x": 17535,
+            "y": 7015
+          },
+          {
+            "x": 17675,
+            "y": 7015
+          },
+          {
+            "x": 17675,
+            "y": 4400
+          },
+          {
+            "x": 17535,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 43262,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453350",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_S",
+        "polygon": [
+          {
+            "x": 17535,
+            "y": 7015
+          },
+          {
+            "x": 17675,
+            "y": 7015
+          },
+          {
+            "x": 17675,
+            "y": 4400
+          },
+          {
+            "x": 17535,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 19732,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:371838",
+        "ifc_class": "IfcWall",
+        "global_id": "145$iJP7j18uA04PAv6J4a",
+        "polygon": [
+          {
+            "x": 25535,
+            "y": 7015
+          },
+          {
+            "x": 25675,
+            "y": 7015
+          },
+          {
+            "x": 25675,
+            "y": 4400
+          },
+          {
+            "x": 25535,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 45057,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453457",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOuh",
+        "polygon": [
+          {
+            "x": 25535,
+            "y": 7015
+          },
+          {
+            "x": 25675,
+            "y": 7015
+          },
+          {
+            "x": 25675,
+            "y": 4400
+          },
+          {
+            "x": 25535,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 13812,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:362943",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0glH",
+        "polygon": [
+          {
+            "x": 9535,
+            "y": 7015
+          },
+          {
+            "x": 9675,
+            "y": 7015
+          },
+          {
+            "x": 9675,
+            "y": 4400
+          },
+          {
+            "x": 9535,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 41065,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453208",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyY",
+        "polygon": [
+          {
+            "x": 9535,
+            "y": 7015
+          },
+          {
+            "x": 9675,
+            "y": 7015
+          },
+          {
+            "x": 9675,
+            "y": 4400
+          },
+          {
+            "x": 9535,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 18600,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:371552",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSuT",
+        "polygon": [
+          {
+            "x": 21525,
+            "y": 7015
+          },
+          {
+            "x": 21665,
+            "y": 7015
+          },
+          {
+            "x": 21665,
+            "y": 4400
+          },
+          {
+            "x": 21525,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 43918,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453367",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_D",
+        "polygon": [
+          {
+            "x": 21525,
+            "y": 7015
+          },
+          {
+            "x": 21665,
+            "y": 7015
+          },
+          {
+            "x": 21665,
+            "y": 4400
+          },
+          {
+            "x": 21525,
+            "y": 4400
+          }
+        ]
+      },
+      {
+        "id": 7766,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:346591",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbm3",
+        "polygon": [
+          {
+            "x": 20315,
+            "y": 9335
+          },
+          {
+            "x": 21765,
+            "y": 9335
+          },
+          {
+            "x": 21765,
+            "y": 9084
+          },
+          {
+            "x": 20315,
+            "y": 9084
+          }
+        ]
+      },
+      {
+        "id": 36637,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452899",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnP",
+        "polygon": [
+          {
+            "x": 20315,
+            "y": 9335
+          },
+          {
+            "x": 21765,
+            "y": 9335
+          },
+          {
+            "x": 21765,
+            "y": 9084
+          },
+          {
+            "x": 20315,
+            "y": 9084
+          }
+        ]
+      },
+      {
+        "id": 19070,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:371566",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSuJ",
+        "polygon": [
+          {
+            "x": 18875,
+            "y": 7515
+          },
+          {
+            "x": 20325,
+            "y": 7515
+          },
+          {
+            "x": 20325,
+            "y": 7265
+          },
+          {
+            "x": 18875,
+            "y": 7265
+          }
+        ]
+      },
+      {
+        "id": 44388,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453381",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOv$",
+        "polygon": [
+          {
+            "x": 18875,
+            "y": 7515
+          },
+          {
+            "x": 20325,
+            "y": 7515
+          },
+          {
+            "x": 20325,
+            "y": 7265
+          },
+          {
+            "x": 18875,
+            "y": 7265
+          }
+        ]
+      },
+      {
+        "id": 16551,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:368552",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0ht6",
+        "polygon": [
+          {
+            "x": 10875,
+            "y": 7515
+          },
+          {
+            "x": 12325,
+            "y": 7515
+          },
+          {
+            "x": 12325,
+            "y": 7265
+          },
+          {
+            "x": 10875,
+            "y": 7265
+          }
+        ]
+      },
+      {
+        "id": 42746,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453263",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO$r",
+        "polygon": [
+          {
+            "x": 10875,
+            "y": 7515
+          },
+          {
+            "x": 12325,
+            "y": 7515
+          },
+          {
+            "x": 12325,
+            "y": 7265
+          },
+          {
+            "x": 10875,
+            "y": 7265
+          }
+        ]
+      },
+      {
+        "id": 20182,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:371851",
+        "ifc_class": "IfcWall",
+        "global_id": "145$iJP7j18uA04PAv6J7H",
+        "polygon": [
+          {
+            "x": 26875,
+            "y": 7515
+          },
+          {
+            "x": 28310,
+            "y": 7515
+          },
+          {
+            "x": 28310,
+            "y": 7265
+          },
+          {
+            "x": 26875,
+            "y": 7265
+          }
+        ]
+      },
+      {
+        "id": 45507,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:453470",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOua",
+        "polygon": [
+          {
+            "x": 26875,
+            "y": 7515
+          },
+          {
+            "x": 28310,
+            "y": 7515
+          },
+          {
+            "x": 28310,
+            "y": 7265
+          },
+          {
+            "x": 26875,
+            "y": 7265
+          }
+        ]
+      },
+      {
+        "id": 7037,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:341469",
+        "ifc_class": "IfcWall",
+        "global_id": "2RJqJVvtDA1QTP08NMeEFH",
+        "polygon": [
+          {
+            "x": 17325,
+            "y": 10255
+          },
+          {
+            "x": 19580,
+            "y": 10255
+          },
+          {
+            "x": 19580,
+            "y": 10115
+          },
+          {
+            "x": 17325,
+            "y": 10115
+          }
+        ]
+      },
+      {
+        "id": 35908,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452868",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOn_",
+        "polygon": [
+          {
+            "x": 17325,
+            "y": 10255
+          },
+          {
+            "x": 19580,
+            "y": 10255
+          },
+          {
+            "x": 19580,
+            "y": 10115
+          },
+          {
+            "x": 17325,
+            "y": 10115
+          }
+        ]
+      },
+      {
+        "id": 1185,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:325467",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6AfHS",
+        "polygon": [
+          {
+            "x": 7475,
+            "y": 17050
+          },
+          {
+            "x": 7725,
+            "y": 17050
+          },
+          {
+            "x": 7725,
+            "y": 15800
+          },
+          {
+            "x": 7475,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 32373,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452656",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOrA",
+        "polygon": [
+          {
+            "x": 7475,
+            "y": 17050
+          },
+          {
+            "x": 7725,
+            "y": 17050
+          },
+          {
+            "x": 7725,
+            "y": 15800
+          },
+          {
+            "x": 7475,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 29381,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:395267",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXLkT",
+        "polygon": [
+          {
+            "x": -115,
+            "y": 11890
+          },
+          {
+            "x": 2715,
+            "y": 11890
+          },
+          {
+            "x": 2715,
+            "y": 11780
+          },
+          {
+            "x": -115,
+            "y": 11780
+          }
+        ]
+      },
+      {
+        "id": 48876,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:453715",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOaf",
+        "polygon": [
+          {
+            "x": -115,
+            "y": 11890
+          },
+          {
+            "x": 2715,
+            "y": 11890
+          },
+          {
+            "x": 2715,
+            "y": 11780
+          },
+          {
+            "x": -115,
+            "y": 11780
+          }
+        ]
+      },
+      {
+        "id": 23237,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:387086",
+        "ifc_class": "IfcWall",
+        "global_id": "0_AxDrCxT3LRXxNQlSbO0L",
+        "polygon": [
+          {
+            "x": 28325,
+            "y": 7515
+          },
+          {
+            "x": 29260,
+            "y": 7515
+          },
+          {
+            "x": 29260,
+            "y": 7200
+          },
+          {
+            "x": 28325,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 47428,
+        "name": "Basic Wall:01.Wall - 315mm - Fn15/Str310:453622",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOwC",
+        "polygon": [
+          {
+            "x": 28325,
+            "y": 7515
+          },
+          {
+            "x": 29260,
+            "y": 7515
+          },
+          {
+            "x": 29260,
+            "y": 7200
+          },
+          {
+            "x": 28325,
+            "y": 7200
+          }
+        ]
+      },
+      {
+        "id": 22893,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:384497",
+        "ifc_class": "IfcWall",
+        "global_id": "0_AxDrCxT3LRXxNQlSbRNg",
+        "polygon": [
+          {
+            "x": 27710,
+            "y": 4525
+          },
+          {
+            "x": 29675,
+            "y": 4525
+          },
+          {
+            "x": 29675,
+            "y": 4385
+          },
+          {
+            "x": 27710,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 47137,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453612",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOwM",
+        "polygon": [
+          {
+            "x": 27710,
+            "y": 4525
+          },
+          {
+            "x": 29675,
+            "y": 4525
+          },
+          {
+            "x": 29675,
+            "y": 4385
+          },
+          {
+            "x": 27710,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 17894,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:371534",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSup",
+        "polygon": [
+          {
+            "x": 15710,
+            "y": 4525
+          },
+          {
+            "x": 17675,
+            "y": 4525
+          },
+          {
+            "x": 17675,
+            "y": 4385
+          },
+          {
+            "x": 15710,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 43212,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453349",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_V",
+        "polygon": [
+          {
+            "x": 15710,
+            "y": 4525
+          },
+          {
+            "x": 17675,
+            "y": 4525
+          },
+          {
+            "x": 17675,
+            "y": 4385
+          },
+          {
+            "x": 15710,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 19682,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:371837",
+        "ifc_class": "IfcWall",
+        "global_id": "145$iJP7j18uA04PAv6J4d",
+        "polygon": [
+          {
+            "x": 23710,
+            "y": 4525
+          },
+          {
+            "x": 25675,
+            "y": 4525
+          },
+          {
+            "x": 25675,
+            "y": 4385
+          },
+          {
+            "x": 23710,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 45007,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453456",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOug",
+        "polygon": [
+          {
+            "x": 23710,
+            "y": 4525
+          },
+          {
+            "x": 25675,
+            "y": 4525
+          },
+          {
+            "x": 25675,
+            "y": 4385
+          },
+          {
+            "x": 23710,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 13762,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:362739",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0ggT",
+        "polygon": [
+          {
+            "x": 7710,
+            "y": 4525
+          },
+          {
+            "x": 9675,
+            "y": 4525
+          },
+          {
+            "x": 9675,
+            "y": 4385
+          },
+          {
+            "x": 7710,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 18550,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:371551",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSuY",
+        "polygon": [
+          {
+            "x": 21525,
+            "y": 4525
+          },
+          {
+            "x": 23490,
+            "y": 4525
+          },
+          {
+            "x": 23490,
+            "y": 4385
+          },
+          {
+            "x": 21525,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 41015,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453207",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyj",
+        "polygon": [
+          {
+            "x": 7710,
+            "y": 4525
+          },
+          {
+            "x": 9675,
+            "y": 4525
+          },
+          {
+            "x": 9675,
+            "y": 4385
+          },
+          {
+            "x": 7710,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 43868,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453366",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_C",
+        "polygon": [
+          {
+            "x": 21525,
+            "y": 4525
+          },
+          {
+            "x": 23490,
+            "y": 4525
+          },
+          {
+            "x": 23490,
+            "y": 4385
+          },
+          {
+            "x": 21525,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 15087,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:368067",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0h_j",
+        "polygon": [
+          {
+            "x": 13525,
+            "y": 4525
+          },
+          {
+            "x": 15490,
+            "y": 4525
+          },
+          {
+            "x": 15490,
+            "y": 4385
+          },
+          {
+            "x": 13525,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 42226,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:453248",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO$w",
+        "polygon": [
+          {
+            "x": 13525,
+            "y": 4525
+          },
+          {
+            "x": 15490,
+            "y": 4525
+          },
+          {
+            "x": 15490,
+            "y": 4385
+          },
+          {
+            "x": 13525,
+            "y": 4385
+          }
+        ]
+      },
+      {
+        "id": 14037,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:363699",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0gxT",
+        "polygon": [
+          {
+            "x": 4800,
+            "y": -250
+          },
+          {
+            "x": 7300,
+            "y": -250
+          },
+          {
+            "x": 7300,
+            "y": -360
+          },
+          {
+            "x": 4800,
+            "y": -360
+          }
+        ]
+      },
+      {
+        "id": 41290,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:453213",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyd",
+        "polygon": [
+          {
+            "x": 4800,
+            "y": -250
+          },
+          {
+            "x": 7300,
+            "y": -250
+          },
+          {
+            "x": 7300,
+            "y": -360
+          },
+          {
+            "x": 4800,
+            "y": -360
+          }
+        ]
+      },
+      {
+        "id": 26144,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:390355",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXgTD",
+        "polygon": [
+          {
+            "x": -400,
+            "y": 17050
+          },
+          {
+            "x": -180,
+            "y": 17050
+          },
+          {
+            "x": -180,
+            "y": 15800
+          },
+          {
+            "x": -400,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 47756,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453675",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnObH",
+        "polygon": [
+          {
+            "x": -400,
+            "y": 17050
+          },
+          {
+            "x": -180,
+            "y": 17050
+          },
+          {
+            "x": -180,
+            "y": 15800
+          },
+          {
+            "x": -400,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 3092,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:330108",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6Asfx",
+        "polygon": [
+          {
+            "x": 17490,
+            "y": 17050
+          },
+          {
+            "x": 18720,
+            "y": 17050
+          },
+          {
+            "x": 18720,
+            "y": 16830
+          },
+          {
+            "x": 17490,
+            "y": 16830
+          }
+        ]
+      },
+      {
+        "id": 33967,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:452729",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOq3",
+        "polygon": [
+          {
+            "x": 17490,
+            "y": 17050
+          },
+          {
+            "x": 18720,
+            "y": 17050
+          },
+          {
+            "x": 18720,
+            "y": 16830
+          },
+          {
+            "x": 17490,
+            "y": 16830
+          }
+        ]
+      },
+      {
+        "id": 7357,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:344911",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbQJ",
+        "polygon": [
+          {
+            "x": 19565,
+            "y": 10990
+          },
+          {
+            "x": 19815,
+            "y": 10990
+          },
+          {
+            "x": 19815,
+            "y": 9920
+          },
+          {
+            "x": 19565,
+            "y": 9920
+          }
+        ]
+      },
+      {
+        "id": 36228,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452891",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnX",
+        "polygon": [
+          {
+            "x": 19565,
+            "y": 10990
+          },
+          {
+            "x": 19815,
+            "y": 10990
+          },
+          {
+            "x": 19815,
+            "y": 9920
+          },
+          {
+            "x": 19565,
+            "y": 9920
+          }
+        ]
+      },
+      {
+        "id": 7674,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:346240",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbrS",
+        "polygon": [
+          {
+            "x": 21625,
+            "y": 10990
+          },
+          {
+            "x": 21765,
+            "y": 10990
+          },
+          {
+            "x": 21765,
+            "y": 9099
+          },
+          {
+            "x": 21625,
+            "y": 9099
+          }
+        ]
+      },
+      {
+        "id": 36545,
+        "name": "Basic Wall:02.Wall - 140mm - Fn15/Str110/Fn15:452898",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnO",
+        "polygon": [
+          {
+            "x": 21625,
+            "y": 10990
+          },
+          {
+            "x": 21765,
+            "y": 10990
+          },
+          {
+            "x": 21765,
+            "y": 9099
+          },
+          {
+            "x": 21625,
+            "y": 9099
+          }
+        ]
+      },
+      {
+        "id": 15230,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:368070",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0h_e",
+        "polygon": [
+          {
+            "x": 12200,
+            "y": 7200
+          },
+          {
+            "x": 13540,
+            "y": 7200
+          },
+          {
+            "x": 13540,
+            "y": 7015
+          },
+          {
+            "x": 12200,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 42369,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:453251",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO$v",
+        "polygon": [
+          {
+            "x": 12200,
+            "y": 7200
+          },
+          {
+            "x": 13540,
+            "y": 7200
+          },
+          {
+            "x": 13540,
+            "y": 7015
+          },
+          {
+            "x": 12200,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 18693,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:371554",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSuV",
+        "polygon": [
+          {
+            "x": 20200,
+            "y": 7200
+          },
+          {
+            "x": 21540,
+            "y": 7200
+          },
+          {
+            "x": 21540,
+            "y": 7015
+          },
+          {
+            "x": 20200,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 44011,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:453369",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_3",
+        "polygon": [
+          {
+            "x": 20200,
+            "y": 7200
+          },
+          {
+            "x": 21540,
+            "y": 7200
+          },
+          {
+            "x": 21540,
+            "y": 7015
+          },
+          {
+            "x": 20200,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 18034,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:371537",
+        "ifc_class": "IfcWall",
+        "global_id": "37YiaYLIvEZRnp1QociSui",
+        "polygon": [
+          {
+            "x": 17660,
+            "y": 7200
+          },
+          {
+            "x": 19000,
+            "y": 7200
+          },
+          {
+            "x": 19000,
+            "y": 7015
+          },
+          {
+            "x": 17660,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 43352,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:453352",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_I",
+        "polygon": [
+          {
+            "x": 17660,
+            "y": 7200
+          },
+          {
+            "x": 19000,
+            "y": 7200
+          },
+          {
+            "x": 19000,
+            "y": 7015
+          },
+          {
+            "x": 17660,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 14522,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:364943",
+        "ifc_class": "IfcWall",
+        "global_id": "3Jp7_Om_XB3gra2NQO0hFX",
+        "polygon": [
+          {
+            "x": 9660,
+            "y": 7200
+          },
+          {
+            "x": 11000,
+            "y": 7200
+          },
+          {
+            "x": 11000,
+            "y": 7015
+          },
+          {
+            "x": 9660,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 41703,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:453234",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOy8",
+        "polygon": [
+          {
+            "x": 9660,
+            "y": 7200
+          },
+          {
+            "x": 11000,
+            "y": 7200
+          },
+          {
+            "x": 11000,
+            "y": 7015
+          },
+          {
+            "x": 9660,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 19822,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:371840",
+        "ifc_class": "IfcWall",
+        "global_id": "145$iJP7j18uA04PAv6J7Q",
+        "polygon": [
+          {
+            "x": 25660,
+            "y": 7200
+          },
+          {
+            "x": 27000,
+            "y": 7200
+          },
+          {
+            "x": 27000,
+            "y": 7015
+          },
+          {
+            "x": 25660,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 45147,
+        "name": "Basic Wall:02.Wall - 185mm - Fn15/Str155/Fn15:453459",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOuf",
+        "polygon": [
+          {
+            "x": 25660,
+            "y": 7200
+          },
+          {
+            "x": 27000,
+            "y": 7200
+          },
+          {
+            "x": 27000,
+            "y": 7015
+          },
+          {
+            "x": 25660,
+            "y": 7015
+          }
+        ]
+      },
+      {
+        "id": 1874,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:328291",
+        "ifc_class": "IfcWall",
+        "global_id": "3lhgSUqg10xuOpW0a6As5a",
+        "polygon": [
+          {
+            "x": 15565,
+            "y": 16700
+          },
+          {
+            "x": 15815,
+            "y": 16700
+          },
+          {
+            "x": 15815,
+            "y": 15800
+          },
+          {
+            "x": 15565,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 33008,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452669",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOr7",
+        "polygon": [
+          {
+            "x": 15565,
+            "y": 16700
+          },
+          {
+            "x": 15815,
+            "y": 16700
+          },
+          {
+            "x": 15815,
+            "y": 15800
+          },
+          {
+            "x": 15565,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 8007,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:347232",
+        "ifc_class": "IfcWall",
+        "global_id": "0EID0XpsbBgBGIsiAREbcy",
+        "polygon": [
+          {
+            "x": 23475,
+            "y": 16700
+          },
+          {
+            "x": 23725,
+            "y": 16700
+          },
+          {
+            "x": 23725,
+            "y": 15800
+          },
+          {
+            "x": 23475,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 36863,
+        "name": "Basic Wall:02.Wall - 250mm - Fn15/Str220/Fn15:452904",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnI",
+        "polygon": [
+          {
+            "x": 23475,
+            "y": 16700
+          },
+          {
+            "x": 23725,
+            "y": 16700
+          },
+          {
+            "x": 23725,
+            "y": 15800
+          },
+          {
+            "x": 23475,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 14208,
+        "name": "Rectangular Mullion:50 x 150mm:364351",
+        "ifc_class": "IfcMember",
+        "global_id": "3Jp7_Om_XB3gra2NQO0grH",
+        "polygon": [
+          {
+            "x": 2700,
+            "y": -250
+          },
+          {
+            "x": 4125,
+            "y": -250
+          },
+          {
+            "x": 4125,
+            "y": -400
+          },
+          {
+            "x": 2700,
+            "y": -400
+          }
+        ]
+      },
+      {
+        "id": 21931,
+        "name": "Rectangular Mullion:50 x 150mm:378349",
+        "ifc_class": "IfcMember",
+        "global_id": "2GHJaw7GD5kxL$65sXaFD3",
+        "polygon": [
+          {
+            "x": 28875,
+            "y": -350
+          },
+          {
+            "x": 30300,
+            "y": -350
+          },
+          {
+            "x": 30300,
+            "y": -500
+          },
+          {
+            "x": 28875,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 26346,
+        "name": "Rectangular Mullion:50 x 150mm:391663",
+        "ifc_class": "IfcMember",
+        "global_id": "37dhH78vnBAvg2v3zVXgfn",
+        "polygon": [
+          {
+            "x": 3000,
+            "y": 17050
+          },
+          {
+            "x": 4425,
+            "y": 17050
+          },
+          {
+            "x": 4425,
+            "y": 16900
+          },
+          {
+            "x": 3000,
+            "y": 16900
+          }
+        ]
+      },
+      {
+        "id": 10547,
+        "name": "Rectangular Mullion:50 x 150mm:357224",
+        "ifc_class": "IfcMember",
+        "global_id": "1tv8jvi7vDMfHecTlaZA13",
+        "polygon": [
+          {
+            "x": 20510,
+            "y": -350
+          },
+          {
+            "x": 21910,
+            "y": -350
+          },
+          {
+            "x": 21910,
+            "y": -500
+          },
+          {
+            "x": 20510,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 10804,
+        "name": "Rectangular Mullion:50 x 150mm:357351",
+        "ifc_class": "IfcMember",
+        "global_id": "1tv8jvi7vDMfHecTlaZA3C",
+        "polygon": [
+          {
+            "x": 19110,
+            "y": -350
+          },
+          {
+            "x": 20510,
+            "y": -350
+          },
+          {
+            "x": 20510,
+            "y": -500
+          },
+          {
+            "x": 19110,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 10814,
+        "name": "Rectangular Mullion:50 x 150mm:357352",
+        "ifc_class": "IfcMember",
+        "global_id": "1tv8jvi7vDMfHecTlaZA33",
+        "polygon": [
+          {
+            "x": 17710,
+            "y": -350
+          },
+          {
+            "x": 19110,
+            "y": -350
+          },
+          {
+            "x": 19110,
+            "y": -500
+          },
+          {
+            "x": 17710,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 10904,
+        "name": "Rectangular Mullion:50 x 150mm:375185",
+        "ifc_class": "IfcMember",
+        "global_id": "2GHJaw7GD5kxL$65sXa8y$",
+        "polygon": [
+          {
+            "x": 16310,
+            "y": -350
+          },
+          {
+            "x": 17710,
+            "y": -350
+          },
+          {
+            "x": 17710,
+            "y": -500
+          },
+          {
+            "x": 16310,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 11519,
+        "name": "Rectangular Mullion:50 x 150mm:357511",
+        "ifc_class": "IfcMember",
+        "global_id": "1tv8jvi7vDMfHecTlaZAUi",
+        "polygon": [
+          {
+            "x": 9290,
+            "y": -350
+          },
+          {
+            "x": 10690,
+            "y": -350
+          },
+          {
+            "x": 10690,
+            "y": -500
+          },
+          {
+            "x": 9290,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 11726,
+        "name": "Rectangular Mullion:50 x 150mm:357541",
+        "ifc_class": "IfcMember",
+        "global_id": "1tv8jvi7vDMfHecTlaZAUE",
+        "polygon": [
+          {
+            "x": 10690,
+            "y": -350
+          },
+          {
+            "x": 12090,
+            "y": -350
+          },
+          {
+            "x": 12090,
+            "y": -500
+          },
+          {
+            "x": 10690,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 11736,
+        "name": "Rectangular Mullion:50 x 150mm:357542",
+        "ifc_class": "IfcMember",
+        "global_id": "1tv8jvi7vDMfHecTlaZAUD",
+        "polygon": [
+          {
+            "x": 12090,
+            "y": -350
+          },
+          {
+            "x": 13490,
+            "y": -350
+          },
+          {
+            "x": 13490,
+            "y": -500
+          },
+          {
+            "x": 12090,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 11746,
+        "name": "Rectangular Mullion:50 x 150mm:357543",
+        "ifc_class": "IfcMember",
+        "global_id": "1tv8jvi7vDMfHecTlaZAUC",
+        "polygon": [
+          {
+            "x": 13490,
+            "y": -350
+          },
+          {
+            "x": 14890,
+            "y": -350
+          },
+          {
+            "x": 14890,
+            "y": -500
+          },
+          {
+            "x": 13490,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 22325,
+        "name": "Rectangular Mullion:50 x 150mm:382851",
+        "ifc_class": "IfcMember",
+        "global_id": "2GHJaw7GD5kxL$65sXaE4j",
+        "polygon": [
+          {
+            "x": 25290,
+            "y": -350
+          },
+          {
+            "x": 26690,
+            "y": -350
+          },
+          {
+            "x": 26690,
+            "y": -500
+          },
+          {
+            "x": 25290,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 2565,
+        "name": "Rectangular Mullion:50 x 150mm:329788",
+        "ifc_class": "IfcMember",
+        "global_id": "3lhgSUqg10xuOpW0a6Asix",
+        "polygon": [
+          {
+            "x": 14700,
+            "y": 16850
+          },
+          {
+            "x": 16100,
+            "y": 16850
+          },
+          {
+            "x": 16100,
+            "y": 16700
+          },
+          {
+            "x": 14700,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 2198,
+        "name": "Rectangular Mullion:50 x 150mm:329426",
+        "ifc_class": "IfcMember",
+        "global_id": "3lhgSUqg10xuOpW0a6AsNL",
+        "polygon": [
+          {
+            "x": 9100,
+            "y": 16850
+          },
+          {
+            "x": 10500,
+            "y": 16850
+          },
+          {
+            "x": 10500,
+            "y": 16700
+          },
+          {
+            "x": 9100,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 2208,
+        "name": "Rectangular Mullion:50 x 150mm:329427",
+        "ifc_class": "IfcMember",
+        "global_id": "3lhgSUqg10xuOpW0a6AsNK",
+        "polygon": [
+          {
+            "x": 10500,
+            "y": 16850
+          },
+          {
+            "x": 11900,
+            "y": 16850
+          },
+          {
+            "x": 11900,
+            "y": 16700
+          },
+          {
+            "x": 10500,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 2218,
+        "name": "Rectangular Mullion:50 x 150mm:329428",
+        "ifc_class": "IfcMember",
+        "global_id": "3lhgSUqg10xuOpW0a6AsNJ",
+        "polygon": [
+          {
+            "x": 11900,
+            "y": 16850
+          },
+          {
+            "x": 13300,
+            "y": 16850
+          },
+          {
+            "x": 13300,
+            "y": 16700
+          },
+          {
+            "x": 11900,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 2555,
+        "name": "Rectangular Mullion:50 x 150mm:329787",
+        "ifc_class": "IfcMember",
+        "global_id": "3lhgSUqg10xuOpW0a6Asiy",
+        "polygon": [
+          {
+            "x": 13300,
+            "y": 16850
+          },
+          {
+            "x": 14700,
+            "y": 16850
+          },
+          {
+            "x": 14700,
+            "y": 16700
+          },
+          {
+            "x": 13300,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 5985,
+        "name": "Rectangular Mullion:50 x 150mm:336552",
+        "ifc_class": "IfcMember",
+        "global_id": "2RJqJVvtDA1QTP08NMeFIa",
+        "polygon": [
+          {
+            "x": 20095,
+            "y": 16850
+          },
+          {
+            "x": 21495,
+            "y": 16850
+          },
+          {
+            "x": 21495,
+            "y": 16700
+          },
+          {
+            "x": 20095,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 5995,
+        "name": "Rectangular Mullion:50 x 150mm:336553",
+        "ifc_class": "IfcMember",
+        "global_id": "2RJqJVvtDA1QTP08NMeFIb",
+        "polygon": [
+          {
+            "x": 21495,
+            "y": 16850
+          },
+          {
+            "x": 22895,
+            "y": 16850
+          },
+          {
+            "x": 22895,
+            "y": 16700
+          },
+          {
+            "x": 21495,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 6005,
+        "name": "Rectangular Mullion:50 x 150mm:336554",
+        "ifc_class": "IfcMember",
+        "global_id": "2RJqJVvtDA1QTP08NMeFIc",
+        "polygon": [
+          {
+            "x": 22895,
+            "y": 16850
+          },
+          {
+            "x": 24295,
+            "y": 16850
+          },
+          {
+            "x": 24295,
+            "y": 16700
+          },
+          {
+            "x": 22895,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 6225,
+        "name": "Rectangular Mullion:50 x 150mm:336582",
+        "ifc_class": "IfcMember",
+        "global_id": "2RJqJVvtDA1QTP08NMeFJA",
+        "polygon": [
+          {
+            "x": 24295,
+            "y": 16850
+          },
+          {
+            "x": 25695,
+            "y": 16850
+          },
+          {
+            "x": 25695,
+            "y": 16700
+          },
+          {
+            "x": 24295,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 6235,
+        "name": "Rectangular Mullion:50 x 150mm:336583",
+        "ifc_class": "IfcMember",
+        "global_id": "2RJqJVvtDA1QTP08NMeFJB",
+        "polygon": [
+          {
+            "x": 25695,
+            "y": 16850
+          },
+          {
+            "x": 27095,
+            "y": 16850
+          },
+          {
+            "x": 27095,
+            "y": 16700
+          },
+          {
+            "x": 25695,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 6325,
+        "name": "Rectangular Mullion:50 x 150mm:343462",
+        "ifc_class": "IfcMember",
+        "global_id": "0EID0XpsbBgBGIsiAREYXw",
+        "polygon": [
+          {
+            "x": 27095,
+            "y": 16850
+          },
+          {
+            "x": 28495,
+            "y": 16850
+          },
+          {
+            "x": 28495,
+            "y": 16700
+          },
+          {
+            "x": 27095,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 6335,
+        "name": "Rectangular Mullion:50 x 150mm:343463",
+        "ifc_class": "IfcMember",
+        "global_id": "0EID0XpsbBgBGIsiAREYXx",
+        "polygon": [
+          {
+            "x": 28495,
+            "y": 16850
+          },
+          {
+            "x": 29895,
+            "y": 16850
+          },
+          {
+            "x": 29895,
+            "y": 16700
+          },
+          {
+            "x": 28495,
+            "y": 16700
+          }
+        ]
+      },
+      {
+        "id": 26669,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:392175",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXgXn",
+        "polygon": [
+          {
+            "x": 3000,
+            "y": 15800
+          },
+          {
+            "x": 4900,
+            "y": 15800
+          },
+          {
+            "x": 4900,
+            "y": 15690
+          },
+          {
+            "x": 3000,
+            "y": 15690
+          }
+        ]
+      },
+      {
+        "id": 48222,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:453697",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOax",
+        "polygon": [
+          {
+            "x": 3000,
+            "y": 15800
+          },
+          {
+            "x": 4900,
+            "y": 15800
+          },
+          {
+            "x": 4900,
+            "y": 15690
+          },
+          {
+            "x": 3000,
+            "y": 15690
+          }
+        ]
+      },
+      {
+        "id": 26895,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:393353",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXLCN",
+        "polygon": [
+          {
+            "x": 3000,
+            "y": 13110
+          },
+          {
+            "x": 4900,
+            "y": 13110
+          },
+          {
+            "x": 4900,
+            "y": 13000
+          },
+          {
+            "x": 3000,
+            "y": 13000
+          }
+        ]
+      },
+      {
+        "id": 48448,
+        "name": "Basic Wall:02.Wall - 110mm - Fn15/Str80/Fn15:453702",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOay",
+        "polygon": [
+          {
+            "x": 3000,
+            "y": 13110
+          },
+          {
+            "x": 4900,
+            "y": 13110
+          },
+          {
+            "x": 4900,
+            "y": 13000
+          },
+          {
+            "x": 3000,
+            "y": 13000
+          }
+        ]
+      },
+      {
+        "id": 28168,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:393960",
+        "ifc_class": "IfcWall",
+        "global_id": "37dhH78vnBAvg2v3zVXL5s",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 16750
+          },
+          {
+            "x": 5120,
+            "y": 16750
+          },
+          {
+            "x": 5120,
+            "y": 15800
+          },
+          {
+            "x": 4900,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 48549,
+        "name": "Basic Wall:02.Wall - 220mm - Fn15/Str190/Fn15:453706",
+        "ifc_class": "IfcWall",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOam",
+        "polygon": [
+          {
+            "x": 4900,
+            "y": 16750
+          },
+          {
+            "x": 5120,
+            "y": 16750
+          },
+          {
+            "x": 5120,
+            "y": 15800
+          },
+          {
+            "x": 4900,
+            "y": 15800
+          }
+        ]
+      },
+      {
+        "id": 10524,
+        "name": "Rectangular Mullion:50 x 150mm:357223",
+        "ifc_class": "IfcMember",
+        "global_id": "1tv8jvi7vDMfHecTlaZA1C",
+        "polygon": [
+          {
+            "x": 21910,
+            "y": -350
+          },
+          {
+            "x": 23285,
+            "y": -350
+          },
+          {
+            "x": 23285,
+            "y": -500
+          },
+          {
+            "x": 21910,
+            "y": -500
+          }
+        ]
+      },
+      {
+        "id": 11990,
+        "name": "Rectangular Mullion:50 x 150mm:375202",
+        "ifc_class": "IfcMember",
+        "global_id": "2GHJaw7GD5kxL$65sXa8yC",
+        "polygon": [
+          {
+            "x": 7915,
+            "y": -350
+          },
+          {
+            "x": 9290,
+            "y": -350
+          },
+          {
+            "x": 9290,
+            "y": -500
+          },
+          {
+            "x": 7915,
+            "y": -500
+          }
+        ]
+      }
+    ],
+    "doors": [
+      {
+        "id": 34073,
+        "name": "M_Door-Room 2:820 x 2200mm:452734",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOq4",
+        "polygon": [
+          {
+            "x": 13934,
+            "y": 9640
+          },
+          {
+            "x": 14896,
+            "y": 9640
+          },
+          {
+            "x": 14896,
+            "y": 9315
+          },
+          {
+            "x": 13934,
+            "y": 9315
+          }
+        ]
+      },
+      {
+        "id": 38036,
+        "name": "M_Door-Room 2:820 x 2200mm:453000",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOpo",
+        "polygon": [
+          {
+            "x": 21844,
+            "y": 9640
+          },
+          {
+            "x": 22807,
+            "y": 9640
+          },
+          {
+            "x": 22807,
+            "y": 9315
+          },
+          {
+            "x": 21844,
+            "y": 9315
+          }
+        ]
+      },
+      {
+        "id": 34027,
+        "name": "M_Door-Room 2:820 x 2200mm:452731",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOq1",
+        "polygon": [
+          {
+            "x": 8394,
+            "y": 9640
+          },
+          {
+            "x": 9356,
+            "y": 9640
+          },
+          {
+            "x": 9356,
+            "y": 9315
+          },
+          {
+            "x": 8394,
+            "y": 9315
+          }
+        ]
+      },
+      {
+        "id": 37426,
+        "name": "M_Door-Room 2:820 x 2200mm:452916",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnE",
+        "polygon": [
+          {
+            "x": 24394,
+            "y": 9640
+          },
+          {
+            "x": 25356,
+            "y": 9640
+          },
+          {
+            "x": 25356,
+            "y": 9315
+          },
+          {
+            "x": 24394,
+            "y": 9315
+          }
+        ]
+      },
+      {
+        "id": 42696,
+        "name": "M_Door-Room 2:820 x 2200mm:453262",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO$q",
+        "polygon": [
+          {
+            "x": 12399,
+            "y": 7220
+          },
+          {
+            "x": 13361,
+            "y": 7220
+          },
+          {
+            "x": 13361,
+            "y": 6960
+          },
+          {
+            "x": 12399,
+            "y": 6960
+          }
+        ]
+      },
+      {
+        "id": 44338,
+        "name": "M_Door-Room 2:820 x 2200mm:453380",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOv_",
+        "polygon": [
+          {
+            "x": 20399,
+            "y": 7220
+          },
+          {
+            "x": 21361,
+            "y": 7220
+          },
+          {
+            "x": 21361,
+            "y": 6960
+          },
+          {
+            "x": 20399,
+            "y": 6960
+          }
+        ]
+      },
+      {
+        "id": 42679,
+        "name": "M_Door-Room 2:820 x 2200mm:453261",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO$t",
+        "polygon": [
+          {
+            "x": 9839,
+            "y": 7220
+          },
+          {
+            "x": 10801,
+            "y": 7220
+          },
+          {
+            "x": 10801,
+            "y": 6960
+          },
+          {
+            "x": 9839,
+            "y": 6960
+          }
+        ]
+      },
+      {
+        "id": 44321,
+        "name": "M_Door-Room 2:820 x 2200mm:453379",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOvv",
+        "polygon": [
+          {
+            "x": 17839,
+            "y": 7220
+          },
+          {
+            "x": 18801,
+            "y": 7220
+          },
+          {
+            "x": 18801,
+            "y": 6960
+          },
+          {
+            "x": 17839,
+            "y": 6960
+          }
+        ]
+      },
+      {
+        "id": 45457,
+        "name": "M_Door-Room 2:820 x 2200mm:453469",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOud",
+        "polygon": [
+          {
+            "x": 25839,
+            "y": 7220
+          },
+          {
+            "x": 26801,
+            "y": 7220
+          },
+          {
+            "x": 26801,
+            "y": 6960
+          },
+          {
+            "x": 25839,
+            "y": 6960
+          }
+        ]
+      },
+      {
+        "id": 47711,
+        "name": "M_Door-Exterior-Double:1100 x 1600mm:453674",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnObG",
+        "polygon": [
+          {
+            "x": 4835,
+            "y": 12240
+          },
+          {
+            "x": 5041,
+            "y": 12240
+          },
+          {
+            "x": 5041,
+            "y": 11040
+          },
+          {
+            "x": 4835,
+            "y": 11040
+          }
+        ]
+      },
+      {
+        "id": 47554,
+        "name": "M_Door-Exterior-Double:1100 x 1600mm:453626",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOw0",
+        "polygon": [
+          {
+            "x": 17640,
+            "y": 9260
+          },
+          {
+            "x": 18840,
+            "y": 9260
+          },
+          {
+            "x": 18840,
+            "y": 9054
+          },
+          {
+            "x": 17640,
+            "y": 9054
+          }
+        ]
+      },
+      {
+        "id": 48498,
+        "name": "M_Door-Stair:916 x 2000mm:453705",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOap",
+        "polygon": [
+          {
+            "x": 3784,
+            "y": 13148
+          },
+          {
+            "x": 4800,
+            "y": 13148
+          },
+          {
+            "x": 4800,
+            "y": 12935
+          },
+          {
+            "x": 3784,
+            "y": 12935
+          }
+        ]
+      },
+      {
+        "id": 48892,
+        "name": "M_Door-Stair:916 x 2000mm:453716",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOak",
+        "polygon": [
+          {
+            "x": 100,
+            "y": 11955
+          },
+          {
+            "x": 1116,
+            "y": 11955
+          },
+          {
+            "x": 1116,
+            "y": 11742
+          },
+          {
+            "x": 100,
+            "y": 11742
+          }
+        ]
+      },
+      {
+        "id": 48825,
+        "name": "M_Door-Stair:916 x 2000mm:453714",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOae",
+        "polygon": [
+          {
+            "x": 2662,
+            "y": 13000
+          },
+          {
+            "x": 2875,
+            "y": 13000
+          },
+          {
+            "x": 2875,
+            "y": 11984
+          },
+          {
+            "x": 2662,
+            "y": 11984
+          }
+        ]
+      },
+      {
+        "id": 48481,
+        "name": "M_Door-Stair:916 x 2000mm:453704",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOao",
+        "polygon": [
+          {
+            "x": 3784,
+            "y": 15865
+          },
+          {
+            "x": 4800,
+            "y": 15865
+          },
+          {
+            "x": 4800,
+            "y": 15652
+          },
+          {
+            "x": 3784,
+            "y": 15652
+          }
+        ]
+      },
+      {
+        "id": 47571,
+        "name": "M_Door-Stair:916 x 2000mm:453627",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOw1",
+        "polygon": [
+          {
+            "x": 15980,
+            "y": 9623
+          },
+          {
+            "x": 16996,
+            "y": 9623
+          },
+          {
+            "x": 16996,
+            "y": 9410
+          },
+          {
+            "x": 15980,
+            "y": 9410
+          }
+        ]
+      },
+      {
+        "id": 45619,
+        "name": "M_Door-Exterior-Double:900 x 1600mm:453497",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOu3",
+        "polygon": [
+          {
+            "x": 27094,
+            "y": 7546
+          },
+          {
+            "x": 28094,
+            "y": 7546
+          },
+          {
+            "x": 28094,
+            "y": 7340
+          },
+          {
+            "x": 27094,
+            "y": 7340
+          }
+        ]
+      },
+      {
+        "id": 43020,
+        "name": "M_Door-Exterior-Double:900 x 1600mm:453344",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_Q",
+        "polygon": [
+          {
+            "x": 11106,
+            "y": 7546
+          },
+          {
+            "x": 12106,
+            "y": 7546
+          },
+          {
+            "x": 12106,
+            "y": 7340
+          },
+          {
+            "x": 11106,
+            "y": 7340
+          }
+        ]
+      },
+      {
+        "id": 44669,
+        "name": "M_Door-Exterior-Double:900 x 1600mm:453437",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOv7",
+        "polygon": [
+          {
+            "x": 19106,
+            "y": 7546
+          },
+          {
+            "x": 20106,
+            "y": 7546
+          },
+          {
+            "x": 20106,
+            "y": 7340
+          },
+          {
+            "x": 19106,
+            "y": 7340
+          }
+        ]
+      },
+      {
+        "id": 40725,
+        "name": "M_Door-Exterior-Double:900 x 1600mm:453199",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyr",
+        "polygon": [
+          {
+            "x": 11098,
+            "y": 9260
+          },
+          {
+            "x": 12098,
+            "y": 9260
+          },
+          {
+            "x": 12098,
+            "y": 9055
+          },
+          {
+            "x": 11098,
+            "y": 9055
+          }
+        ]
+      },
+      {
+        "id": 40742,
+        "name": "M_Door-Exterior-Double:900 x 1600mm:453200",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyg",
+        "polygon": [
+          {
+            "x": 19175,
+            "y": 9260
+          },
+          {
+            "x": 20175,
+            "y": 9260
+          },
+          {
+            "x": 20175,
+            "y": 9054
+          },
+          {
+            "x": 19175,
+            "y": 9054
+          }
+        ]
+      },
+      {
+        "id": 40853,
+        "name": "M_Door-Exterior-Double:900 x 1600mm:453203",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOyf",
+        "polygon": [
+          {
+            "x": 27100,
+            "y": 9260
+          },
+          {
+            "x": 28100,
+            "y": 9260
+          },
+          {
+            "x": 28100,
+            "y": 9055
+          },
+          {
+            "x": 27100,
+            "y": 9055
+          }
+        ]
+      },
+      {
+        "id": 34089,
+        "name": "M_Door-Room 1:720 x 2200mm:452735",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOq5",
+        "polygon": [
+          {
+            "x": 13480,
+            "y": 10866
+          },
+          {
+            "x": 13695,
+            "y": 10866
+          },
+          {
+            "x": 13695,
+            "y": 10004
+          },
+          {
+            "x": 13480,
+            "y": 10004
+          }
+        ]
+      },
+      {
+        "id": 37442,
+        "name": "M_Door-Room 1:720 x 2200mm:452917",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOnF",
+        "polygon": [
+          {
+            "x": 25505,
+            "y": 10866
+          },
+          {
+            "x": 25720,
+            "y": 10866
+          },
+          {
+            "x": 25720,
+            "y": 10004
+          },
+          {
+            "x": 25505,
+            "y": 10004
+          }
+        ]
+      },
+      {
+        "id": 37488,
+        "name": "M_Door-Room 1:720 x 2200mm:452920",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOn2",
+        "polygon": [
+          {
+            "x": 29480,
+            "y": 10866
+          },
+          {
+            "x": 29695,
+            "y": 10866
+          },
+          {
+            "x": 29695,
+            "y": 10004
+          },
+          {
+            "x": 29480,
+            "y": 10004
+          }
+        ]
+      },
+      {
+        "id": 38052,
+        "name": "M_Door-Room 1:720 x 2200mm:453001",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOpp",
+        "polygon": [
+          {
+            "x": 21570,
+            "y": 10856
+          },
+          {
+            "x": 21785,
+            "y": 10856
+          },
+          {
+            "x": 21785,
+            "y": 9994
+          },
+          {
+            "x": 21570,
+            "y": 9994
+          }
+        ]
+      },
+      {
+        "id": 42604,
+        "name": "M_Door-Room 1:720 x 2200mm:453258",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO$m",
+        "polygon": [
+          {
+            "x": 13505,
+            "y": 6521
+          },
+          {
+            "x": 13720,
+            "y": 6521
+          },
+          {
+            "x": 13720,
+            "y": 5659
+          },
+          {
+            "x": 13505,
+            "y": 5659
+          }
+        ]
+      },
+      {
+        "id": 43587,
+        "name": "M_Door-Room 1:720 x 2200mm:453359",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnO_L",
+        "polygon": [
+          {
+            "x": 17480,
+            "y": 6521
+          },
+          {
+            "x": 17695,
+            "y": 6521
+          },
+          {
+            "x": 17695,
+            "y": 5659
+          },
+          {
+            "x": 17480,
+            "y": 5659
+          }
+        ]
+      },
+      {
+        "id": 44246,
+        "name": "M_Door-Room 1:720 x 2200mm:453376",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOvw",
+        "polygon": [
+          {
+            "x": 21505,
+            "y": 6521
+          },
+          {
+            "x": 21720,
+            "y": 6521
+          },
+          {
+            "x": 21720,
+            "y": 5659
+          },
+          {
+            "x": 21505,
+            "y": 5659
+          }
+        ]
+      },
+      {
+        "id": 45382,
+        "name": "M_Door-Room 1:720 x 2200mm:453466",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOuW",
+        "polygon": [
+          {
+            "x": 25480,
+            "y": 6521
+          },
+          {
+            "x": 25695,
+            "y": 6521
+          },
+          {
+            "x": 25695,
+            "y": 5659
+          },
+          {
+            "x": 25480,
+            "y": 5659
+          }
+        ]
+      },
+      {
+        "id": 47203,
+        "name": "M_Door-Room 1:720 x 2200mm:453614",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOwK",
+        "polygon": [
+          {
+            "x": 29480,
+            "y": 6531
+          },
+          {
+            "x": 29695,
+            "y": 6531
+          },
+          {
+            "x": 29695,
+            "y": 5669
+          },
+          {
+            "x": 29480,
+            "y": 5669
+          }
+        ]
+      },
+      {
+        "id": 34043,
+        "name": "M_Door-Room 1:720 x 2200mm:452732",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOq6",
+        "polygon": [
+          {
+            "x": 9505,
+            "y": 10866
+          },
+          {
+            "x": 9720,
+            "y": 10866
+          },
+          {
+            "x": 9720,
+            "y": 10004
+          },
+          {
+            "x": 9505,
+            "y": 10004
+          }
+        ]
+      },
+      {
+        "id": 41945,
+        "name": "M_Door-Room 1:720 x 2200mm:453241",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOy3",
+        "polygon": [
+          {
+            "x": 9480,
+            "y": 6521
+          },
+          {
+            "x": 9695,
+            "y": 6521
+          },
+          {
+            "x": 9695,
+            "y": 5659
+          },
+          {
+            "x": 9480,
+            "y": 5659
+          }
+        ]
+      },
+      {
+        "id": 48720,
+        "name": "M_Door-Stair:693 x 1800mm:453711",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOar",
+        "polygon": [
+          {
+            "x": 2825,
+            "y": 16671
+          },
+          {
+            "x": 3038,
+            "y": 16671
+          },
+          {
+            "x": 3038,
+            "y": 15878
+          },
+          {
+            "x": 2825,
+            "y": 15878
+          }
+        ]
+      },
+      {
+        "id": 47632,
+        "name": "M_Door-Stair:693 x 1800mm:453629",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOw7",
+        "polygon": [
+          {
+            "x": 17525,
+            "y": 10293
+          },
+          {
+            "x": 18318,
+            "y": 10293
+          },
+          {
+            "x": 18318,
+            "y": 10080
+          },
+          {
+            "x": 17525,
+            "y": 10080
+          }
+        ]
+      },
+      {
+        "id": 48464,
+        "name": "M_Door-Stair:693 x 1800mm:453703",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOaz",
+        "polygon": [
+          {
+            "x": 5180,
+            "y": 15838
+          },
+          {
+            "x": 5973,
+            "y": 15838
+          },
+          {
+            "x": 5973,
+            "y": 15625
+          },
+          {
+            "x": 5180,
+            "y": 15625
+          }
+        ]
+      },
+      {
+        "id": 48703,
+        "name": "M_Door-Stair:693 x 1800mm:453710",
+        "ifc_class": "IfcDoor",
+        "global_id": "03IRxYJ6TF68Ts1d8OnOaq",
+        "polygon": [
+          {
+            "x": 4862,
+            "y": 16671
+          },
+          {
+            "x": 5075,
+            "y": 16671
+          },
+          {
+            "x": 5075,
+            "y": 15878
+          },
+          {
+            "x": 4862,
+            "y": 15878
+          }
+        ]
+      }
+    ],
+    "equipment": [
+      {
+        "id": 56471,
+        "name": "Level 9 Air Handling Unit 01",
+        "ifc_class": "IfcUnitaryEquipment",
+        "global_id": "0MQTTahu01000000000000",
+        "polygon": [
+          {
+            "x": 14920,
+            "y": 4690
+          },
+          {
+            "x": 17900,
+            "y": 4690
+          },
+          {
+            "x": 17900,
+            "y": 3530
+          },
+          {
+            "x": 14920,
+            "y": 3530
+          }
+        ]
+      },
+      {
+        "id": 56321,
+        "name": "Level 9 Extract Fan 01",
+        "ifc_class": "IfcFan",
+        "global_id": "0MQTTfan01000000000000",
+        "polygon": [
+          {
+            "x": 13710,
+            "y": 4390
+          },
+          {
+            "x": 15290,
+            "y": 4390
+          },
+          {
+            "x": 15290,
+            "y": 2810
+          },
+          {
+            "x": 13710,
+            "y": 2810
+          }
+        ]
+      },
+      {
+        "id": 56635,
+        "name": "Level 9 Circulation Pump 01",
+        "ifc_class": "IfcPump",
+        "global_id": "0MQTTpump0100000000000",
+        "polygon": [
+          {
+            "x": 17750,
+            "y": 4550
+          },
+          {
+            "x": 19250,
+            "y": 4550
+          },
+          {
+            "x": 19250,
+            "y": 3850
+          },
+          {
+            "x": 17750,
+            "y": 3850
+          }
+        ]
+      },
+      {
+        "id": 55982,
+        "name": "Level 9 Circular Light 01",
+        "ifc_class": "IfcLightFixture",
+        "global_id": "0MQTTlight010000000000",
+        "polygon": [
+          {
+            "x": 8220,
+            "y": 3880
+          },
+          {
+            "x": 8780,
+            "y": 3880
+          },
+          {
+            "x": 8780,
+            "y": 3320
+          },
+          {
+            "x": 8220,
+            "y": 3320
+          }
+        ]
+      },
+      {
+        "id": 55862,
+        "name": "Level 9 Dome Camera 01",
+        "ifc_class": "IfcAudioVisualAppliance",
+        "global_id": "0MQTTcamdome0100000000",
+        "polygon": [
+          {
+            "x": 5010,
+            "y": 3790
+          },
+          {
+            "x": 5390,
+            "y": 3790
+          },
+          {
+            "x": 5390,
+            "y": 3410
+          },
+          {
+            "x": 5010,
+            "y": 3410
+          }
+        ]
+      },
+      {
+        "id": 56171,
+        "name": "Level 9 Smoke Detector 01",
+        "ifc_class": "IfcSensor",
+        "global_id": "0MQTTsmoke010000000000",
+        "polygon": [
+          {
+            "x": 11350,
+            "y": 3750
+          },
+          {
+            "x": 11650,
+            "y": 3750
+          },
+          {
+            "x": 11650,
+            "y": 3450
+          },
+          {
+            "x": 11350,
+            "y": 3450
+          }
+        ]
+      },
+      {
+        "id": 56765,
+        "name": "Level 9 Electricity Meter 01",
+        "ifc_class": "IfcFlowMeter",
+        "global_id": "0MQTTmeter010000000000",
+        "polygon": [
+          {
+            "x": 20310,
+            "y": 4008
+          },
+          {
+            "x": 20690,
+            "y": 4008
+          },
+          {
+            "x": 20690,
+            "y": 3823
+          },
+          {
+            "x": 20310,
+            "y": 3823
+          }
+        ]
+      },
+      {
+        "id": 57468,
+        "name": "Level 10 Electricity Meter 01",
+        "ifc_class": "IfcFlowMeter",
+        "global_id": "0MQTTmeter100000000000",
+        "polygon": [
+          {
+            "x": 20310,
+            "y": 7708
+          },
+          {
+            "x": 20690,
+            "y": 7708
+          },
+          {
+            "x": 20690,
+            "y": 7523
+          },
+          {
+            "x": 20310,
+            "y": 7523
+          }
+        ]
+      },
+      {
+        "id": 57188,
+        "name": "Level 10 Temperature Sensor 01",
+        "ifc_class": "IfcSensor",
+        "global_id": "0MQTTtempsensor1000000",
+        "polygon": [
+          {
+            "x": 10670,
+            "y": 7333
+          },
+          {
+            "x": 10930,
+            "y": 7333
+          },
+          {
+            "x": 10930,
+            "y": 7236
+          },
+          {
+            "x": 10670,
+            "y": 7236
+          }
+        ]
+      }
+    ],
+    "other": []
+  },
+  "stats": {
+    "slabs": 14,
+    "walls": 720,
+    "doors": 37,
+    "equipment": 9,
+    "other": 0
+  }
+}

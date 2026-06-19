@@ -83,6 +83,10 @@ select {
   color: #425057;
 }
 
+.ops-picker {
+  grid-template-columns: 18px minmax(320px, 680px) 38px minmax(170px, 210px);
+}
+
 .model-picker select,
 .search-box input {
   width: 100%;
@@ -106,6 +110,10 @@ select {
   display: grid;
   grid-template-columns: minmax(250px, 300px) minmax(420px, 1fr) minmax(300px, 360px);
   min-height: 0;
+}
+
+.operations-workspace {
+  grid-template-columns: minmax(300px, 340px) minmax(520px, 1fr) minmax(360px, 420px);
 }
 
 .asset-rail,
@@ -205,6 +213,19 @@ select {
   font-size: 12px;
 }
 
+.asset-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.muted-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .asset-type {
   color: #0d777f !important;
   font-weight: 700;
@@ -216,6 +237,10 @@ select {
   min-height: 0;
   overflow: hidden;
   background: #e7ecef;
+}
+
+.operations-stage {
+  min-height: 0;
 }
 
 .ifc-canvas-wrap,
@@ -261,6 +286,10 @@ select {
   justify-content: space-between;
   gap: 10px;
   pointer-events: none;
+}
+
+.viewer-toolbar .icon-button {
+  flex: 0 0 auto;
 }
 
 .status-pill,
@@ -350,6 +379,13 @@ select {
 .property-panel {
   border-left: 1px solid #d4dcdf;
   padding: 16px;
+}
+
+.operations-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
 }
 
 .panel-head {
@@ -456,6 +492,805 @@ select {
   background: #ffffff;
   font-size: 12px;
   line-height: 1.45;
+}
+
+.filter-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.natural-search {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d8e0e3;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.natural-search label {
+  display: grid;
+  gap: 6px;
+  color: #334149;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.natural-search textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border: 1px solid #c7d0d4;
+  border-radius: 8px;
+  padding: 9px;
+  color: #172024;
+  background: #f8fafb;
+  font: inherit;
+  font-size: 13px;
+}
+
+.natural-actions {
+  display: grid;
+  grid-template-columns: 1fr 86px;
+  gap: 8px;
+}
+
+.natural-actions button {
+  min-height: 34px;
+  border: 1px solid #c7d0d4;
+  border-radius: 8px;
+  color: #26363d;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.natural-actions button:first-child {
+  border-color: #0d777f;
+  color: #ffffff;
+  background: #0d777f;
+}
+
+.natural-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.nl-result,
+.active-chip {
+  margin: 0;
+  color: #66737a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.llm-status,
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.llm-status {
+  padding: 7px 8px;
+  border: 1px solid #d8e0e3;
+  border-radius: 8px;
+  background: #f8fafb;
+  color: #66737a;
+  font-size: 12px;
+}
+
+.llm-status.online {
+  border-color: #a7f3d0;
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.llm-status.offline {
+  border-color: #fed7aa;
+  color: #9a3412;
+  background: #fff7ed;
+}
+
+.llm-status button,
+.card-title-row button,
+.primary-action {
+  min-height: 30px;
+  border: 1px solid #c7d0d4;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #26363d;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.active-chip {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #92400e;
+  background: #fef3c7;
+  font-weight: 800;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.select-filter {
+  display: grid;
+  gap: 4px;
+  color: #64727a;
+  font-size: 12px;
+}
+
+.select-filter select,
+.inline-controls input,
+.inline-controls select {
+  min-width: 0;
+  height: 34px;
+  border: 1px solid #c7d0d4;
+  border-radius: 7px;
+  padding: 0 8px;
+  color: #182329;
+  background: #ffffff;
+}
+
+.sim-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid #c7d0d4;
+  border-radius: 8px;
+  color: #26363d;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.sim-toggle.running {
+  border-color: #a7f3d0;
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.status-dot,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  gap: 5px;
+  color: #334149 !important;
+}
+
+.status-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--status-color);
+}
+
+.status-badge {
+  padding: 7px 10px;
+  color: #ffffff;
+}
+
+.status-badge.normal {
+  background: #16a34a;
+}
+
+.status-badge.warning {
+  background: #f59e0b;
+}
+
+.status-badge.fault {
+  background: #dc2626;
+}
+
+.status-badge.offline {
+  background: #64748b;
+}
+
+.ops-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #d7e1e4;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.ops-card h3 {
+  margin: 0;
+  color: #334149;
+  font-size: 14px;
+}
+
+.scenario-panel select,
+.add-asset-form input,
+.add-asset-form select {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid #c7d0d4;
+  border-radius: 8px;
+  padding: 0 8px;
+  color: #182329;
+  background: #ffffff;
+}
+
+.add-asset-form {
+  display: grid;
+  gap: 9px;
+}
+
+.add-asset-form label {
+  display: grid;
+  gap: 4px;
+  color: #66737a;
+  font-size: 12px;
+}
+
+.coordinate-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.primary-action {
+  border-color: #0d777f;
+  color: #ffffff;
+  background: #0d777f;
+}
+
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto;
+  gap: 7px 10px;
+  font-size: 12px;
+}
+
+.telemetry-grid span {
+  color: #66737a;
+  text-transform: capitalize;
+}
+
+.telemetry-grid strong {
+  color: #172024;
+}
+
+.ops-card small,
+.hint-text,
+.empty-state {
+  margin: 0;
+  color: #66737a;
+  font-size: 12px;
+}
+
+.alert-list,
+.nearby-list,
+.tech-list {
+  display: grid;
+  gap: 7px;
+}
+
+.alert-row,
+.nearby-list button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  border: 1px solid #d8e0e3;
+  border-radius: 8px;
+  padding: 9px;
+  text-align: left;
+  background: #f8fafb;
+  cursor: pointer;
+}
+
+.alert-row.high {
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.alert-row.medium {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.alert-row.low {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.alert-row span,
+.nearby-list span,
+.nearby-list em,
+.tech-row span {
+  color: #66737a;
+  font-size: 12px;
+}
+
+.nearby-list button {
+  grid-template-columns: 76px 1fr auto;
+  align-items: center;
+}
+
+.nearby-list strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inline-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.inline-controls label {
+  display: grid;
+  gap: 4px;
+  color: #66737a;
+  font-size: 12px;
+}
+
+.asset-map {
+  width: 100%;
+  height: 230px;
+}
+
+.asset-map rect {
+  fill: #f8fafb;
+  stroke: #d7e1e4;
+}
+
+.asset-map text {
+  fill: #66737a;
+  font-size: 11px;
+}
+
+.floorplan-layer.slabs polygon {
+  fill: #eef3f6;
+  stroke: #cbd5dc;
+  stroke-width: 0.7;
+}
+
+.floorplan-layer.walls polygon {
+  fill: #334149;
+  fill-opacity: 0.64;
+  stroke: #1f2933;
+  stroke-width: 0.5;
+}
+
+.floorplan-layer.doors polygon {
+  fill: #38bdf8;
+  fill-opacity: 0.65;
+  stroke: #0284c7;
+  stroke-width: 0.6;
+}
+
+.floorplan-layer.equipment-footprints polygon {
+  fill: #f59e0b;
+  fill-opacity: 0.28;
+  stroke: #d97706;
+  stroke-width: 0.8;
+}
+
+.asset-map polyline {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 8 6;
+}
+
+.map-asset {
+  cursor: pointer;
+}
+
+.map-asset circle {
+  fill: #0d777f;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.map-asset.active circle {
+  fill: #f59e0b;
+  stroke: #172024;
+}
+
+.user-point {
+  fill: #2563eb;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.tech-row {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid #d8e0e3;
+  border-radius: 8px;
+  background: #f8fafb;
+}
+
+.relationship-panel {
+  gap: 12px;
+}
+
+.relationship-group {
+  display: grid;
+  gap: 6px;
+}
+
+.relationship-group > strong {
+  color: #334149;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.relationship-group button {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid #d8e0e3;
+  border-radius: 8px;
+  padding: 6px 8px;
+  text-align: left;
+  color: #172024;
+  background: #f8fafb;
+  cursor: pointer;
+}
+
+.relationship-group span,
+.relationship-group small {
+  color: #66737a;
+  font-size: 12px;
+}
+
+.relationship-group em {
+  overflow: hidden;
+  color: inherit;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank {
+  display: grid;
+  place-items: center;
+  height: 28px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #0d777f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tech-row strong,
+.tech-row span {
+  display: block;
+}
+
+/* Operations cockpit skin: keep the 3D model dominant and float UI as glass HUD panels. */
+.operations-shell {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(20, 108, 115, 0.2), transparent 32%),
+    linear-gradient(135deg, #0f172a 0%, #111827 48%, #07111c 100%);
+  color: #e5edf2;
+}
+
+.operations-shell .topbar {
+  position: relative;
+  z-index: 5;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.86);
+  box-shadow: 0 18px 50px rgba(2, 6, 23, 0.3);
+  backdrop-filter: blur(18px);
+}
+
+.operations-shell .brand h1 {
+  color: #f8fafc;
+}
+
+.operations-shell .brand p {
+  color: #94a3b8;
+}
+
+.operations-shell .brand-mark {
+  border: 1px solid rgba(103, 232, 249, 0.28);
+  background: linear-gradient(135deg, #0f766e, #0891b2);
+  box-shadow: 0 0 28px rgba(8, 145, 178, 0.28);
+}
+
+.operations-shell .model-picker {
+  color: #cbd5e1;
+}
+
+.operations-shell .model-picker select,
+.operations-shell .search-box,
+.operations-shell .select-filter select,
+.operations-shell .inline-controls input,
+.operations-shell .inline-controls select,
+.operations-shell .natural-search textarea,
+.operations-shell .scenario-panel select,
+.operations-shell .add-asset-form input,
+.operations-shell .add-asset-form select {
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.operations-shell .model-picker select option,
+.operations-shell .select-filter select option,
+.operations-shell .inline-controls select option,
+.operations-shell .scenario-panel select option,
+.operations-shell .add-asset-form select option {
+  color: #172024;
+  background: #ffffff;
+}
+
+.operations-shell .sim-toggle {
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #dbeafe;
+  background: rgba(30, 41, 59, 0.72);
+}
+
+.operations-shell .sim-toggle.running {
+  border-color: rgba(52, 211, 153, 0.42);
+  color: #a7f3d0;
+  background: rgba(6, 78, 59, 0.55);
+}
+
+.operations-workspace {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+.operations-stage {
+  position: absolute;
+  inset: 0;
+  background: #101826;
+}
+
+.operations-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(2, 6, 23, 0.22), transparent 22%, transparent 78%, rgba(2, 6, 23, 0.22)),
+    radial-gradient(circle at 50% 10%, transparent 48%, rgba(2, 6, 23, 0.16));
+}
+
+.operations-rail,
+.operations-panel {
+  position: absolute;
+  z-index: 4;
+  top: 16px;
+  bottom: 16px;
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.58);
+  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.34);
+  backdrop-filter: blur(18px) saturate(130%);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+}
+
+.operations-rail {
+  left: 16px;
+  width: min(340px, calc(50vw - 80px));
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.operations-panel {
+  right: 16px;
+  width: min(390px, calc(50vw - 80px));
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.operations-shell .summary-band {
+  gap: 10px;
+}
+
+.operations-shell .metric,
+.operations-shell .natural-search,
+.operations-shell .asset-row,
+.operations-shell .ops-card,
+.operations-shell .link-state,
+.operations-shell .property-grid,
+.operations-shell .json-block pre,
+.operations-shell .alert-row,
+.operations-shell .nearby-list button,
+.operations-shell .tech-row,
+.operations-shell .llm-status,
+.operations-shell .relationship-group button {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.operations-shell .metric {
+  border-radius: 14px;
+}
+
+.operations-shell .metric svg,
+.operations-shell .search-box svg {
+  color: #67e8f9;
+}
+
+.operations-shell .metric span,
+.operations-shell .brand p,
+.operations-shell .select-filter,
+.operations-shell .inline-controls label,
+.operations-shell .asset-row span,
+.operations-shell .link-state span,
+.operations-shell .hint-text,
+.operations-shell .empty-state,
+.operations-shell .ops-card small,
+.operations-shell .alert-row span,
+.operations-shell .nearby-list span,
+.operations-shell .nearby-list em,
+.operations-shell .tech-row span,
+.operations-shell .telemetry-grid span,
+.operations-shell .nl-result,
+.operations-shell .add-asset-form label,
+.operations-shell .relationship-group span,
+.operations-shell .relationship-group small {
+  color: #94a3b8;
+}
+
+.operations-shell .metric strong,
+.operations-shell .asset-row strong,
+.operations-shell .ops-card h3,
+.operations-shell .panel-head h2,
+.operations-shell .link-state strong,
+.operations-shell .nearby-list strong,
+.operations-shell .tech-row strong,
+.operations-shell .telemetry-grid strong,
+.operations-shell .property-grid dd,
+.operations-shell .relationship-group > strong,
+.operations-shell .relationship-group em {
+  color: #f8fafc;
+}
+
+.operations-shell .natural-search label,
+.operations-shell .json-block h3 {
+  color: #e2e8f0;
+}
+
+.operations-shell .asset-row {
+  border-radius: 14px;
+}
+
+.operations-shell .asset-row:hover,
+.operations-shell .asset-row.active {
+  border-color: rgba(34, 211, 238, 0.72);
+  background: rgba(8, 145, 178, 0.2);
+  box-shadow:
+    inset 3px 0 0 #22d3ee,
+    0 14px 28px rgba(8, 145, 178, 0.14);
+}
+
+.operations-shell .asset-type,
+.operations-shell .eyebrow {
+  color: #67e8f9 !important;
+}
+
+.operations-shell .panel-head {
+  border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+
+.operations-shell .status-pill,
+.operations-shell .icon-button,
+.operations-shell .viewer-hint {
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #dbeafe;
+  background: rgba(15, 23, 42, 0.56);
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.operations-shell .status-pill.ready {
+  color: #a7f3d0;
+}
+
+.operations-shell .icon-button:hover {
+  border-color: rgba(34, 211, 238, 0.72);
+  color: #67e8f9;
+  background: rgba(8, 145, 178, 0.24);
+}
+
+.operations-shell .viewer-toolbar {
+  top: 16px;
+  left: 370px;
+  right: 430px;
+}
+
+.operations-shell .viewer-hint {
+  left: 370px;
+  bottom: 18px;
+  max-width: min(680px, calc(100% - 820px));
+}
+
+.operations-shell .llm-status button,
+.operations-shell .natural-actions button,
+.operations-shell .card-title-row button {
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #e2e8f0;
+  background: rgba(30, 41, 59, 0.72);
+}
+
+.operations-shell .natural-actions button:first-child {
+  border-color: rgba(34, 211, 238, 0.58);
+  background: linear-gradient(135deg, #0f766e, #0891b2);
+}
+
+.operations-shell .property-grid dt {
+  color: #94a3b8;
+  background: rgba(30, 41, 59, 0.62);
+}
+
+.operations-shell .property-grid dt,
+.operations-shell .property-grid dd {
+  border-bottom-color: rgba(148, 163, 184, 0.16);
+}
+
+.operations-shell .json-block pre {
+  color: #dbeafe;
+}
+
+.operations-shell .alert-row.high {
+  border-color: rgba(248, 113, 113, 0.42);
+  background: rgba(127, 29, 29, 0.42);
+}
+
+.operations-shell .alert-row.medium {
+  border-color: rgba(251, 146, 60, 0.42);
+  background: rgba(124, 45, 18, 0.42);
+}
+
+.operations-shell .alert-row.low {
+  border-color: rgba(250, 204, 21, 0.4);
+  background: rgba(113, 63, 18, 0.38);
+}
+
+.operations-shell .rank {
+  background: linear-gradient(135deg, #0891b2, #0f766e);
+}
+
+.operations-shell .asset-map {
+  height: 210px;
+  border-radius: 14px;
+}
+
+.operations-shell .asset-map rect {
+  fill: rgba(226, 232, 240, 0.9);
+  stroke: rgba(103, 232, 249, 0.32);
 }
 
 @media (max-width: 1100px) {

@@ -15,6 +15,8 @@ const OWNER_HISTORY = 18;
 const BODY_CONTEXT = 24;
 const LEVEL_9_PLACEMENT = 80;
 const LEVEL_9 = 81;
+const LEVEL_10_PLACEMENT = 84;
+const LEVEL_10 = 85;
 const BUILDING = 34;
 
 const source = fs.readFileSync(sourcePath, "utf8");
@@ -50,10 +52,10 @@ function point3d([x, y, z]) {
   return `(${num(x)},${num(y)},${num(z)})`;
 }
 
-function placement(x, y, z) {
+function placement(parentPlacement, x, y, z) {
   const point = add(`IFCCARTESIANPOINT((${num(x)},${num(y)},${num(z)}))`);
   const axis = add(`IFCAXIS2PLACEMENT3D(${ref(point)},$,$)`);
-  return add(`IFCLOCALPLACEMENT(${ref(LEVEL_9_PLACEMENT)},${ref(axis)})`);
+  return add(`IFCLOCALPLACEMENT(${ref(parentPlacement)},${ref(axis)})`);
 }
 
 function transformPoint(point, transform = {}) {
@@ -236,9 +238,11 @@ function propertyValue(name, value, type = "IFCLABEL") {
 }
 
 function attachProperties(spec, element) {
+  const floorCode = spec.floorCode || "LEVEL-09";
   const properties = [
     propertyValue("Asset Code", spec.assetCode),
-    propertyValue("Functional Location", "MARRIOTT/LEVEL-09/DEMO-ZONE"),
+    propertyValue("Functional Location", `MARRIOTT/${floorCode}/DEMO-ZONE`),
+    propertyValue("Floor", spec.floorName || "Level 9"),
     propertyValue("Asset Tag No.", spec.assetCode),
     propertyValue("Manufacturer", spec.manufacturer),
     propertyValue("Model No.", spec.model),
@@ -269,7 +273,7 @@ function attachProperties(spec, element) {
 }
 
 function createDevice(spec) {
-  const objectPlacement = placement(spec.x, spec.y, spec.z);
+  const objectPlacement = placement(spec.storeyPlacement || LEVEL_9_PLACEMENT, spec.x, spec.y, spec.z);
   const shape = shapeRepresentation(spec.parts());
   const element = add(
     `${spec.ifcClass}('${guid(spec.code)}',${ref(OWNER_HISTORY)},${text(
@@ -279,7 +283,7 @@ function createDevice(spec) {
     )},${text(spec.assetCode)},.${spec.predefinedType}.)`,
   );
   attachProperties(spec, element);
-  return { ...spec, element };
+  return { storey: LEVEL_9, floorName: "Level 9", floorCode: "LEVEL-09", ...spec, element };
 }
 
 const devices = [
@@ -373,9 +377,9 @@ const devices = [
   createDevice({
     code: "fan01",
     ifcClass: "IFCFAN",
-    name: "Level 9 Ceiling Fan 01",
-    description: "Four-blade ceiling fan with downrod and motor housing",
-    objectType: "Ceiling Fan",
+    name: "Level 9 Extract Fan 01",
+    description: "Four-blade extract fan with duct collar and motor housing",
+    objectType: "Extract Fan",
     predefinedType: "PROPELLORAXIAL",
     assetCode: "FAN-L09-001",
     deviceId: "fan-l09-001",
@@ -410,6 +414,34 @@ const devices = [
     },
   }),
   createDevice({
+    code: "ahu01",
+    ifcClass: "IFCUNITARYEQUIPMENT",
+    name: "Level 9 Air Handling Unit 01",
+    description: "Modeled AHU with casing, filter section, fan section and duct collars",
+    objectType: "Air Handling Unit",
+    predefinedType: "AIRHANDLER",
+    assetCode: "AHU-L09-001",
+    deviceId: "ahu-l09-001",
+    mqttTopic: "marriott/level-09/hvac/AHU-L09-001/telemetry",
+    pointTemplate: "ahu_supply_temp_return_temp_filter_dp_fan_status",
+    manufacturer: "DemoAir",
+    model: "DA-AHU-9000",
+    status: "Online",
+    system: "hvac",
+    x: 16200,
+    y: 4200,
+    z: 0,
+    parts: () => [
+      { mesh: box(2100, 900, 950, { z: 180 }), styleId: STYLES.metal() },
+      { mesh: box(620, 930, 1000, { x: -550, z: 210 }), styleId: STYLES.white() },
+      { mesh: box(780, 930, 1000, { x: 430, z: 210 }), styleId: STYLES.dark() },
+      { mesh: cylinder(260, 420, "x", { x: -1280, z: 650 }), styleId: STYLES.metal() },
+      { mesh: cylinder(260, 420, "x", { x: 1280, z: 650 }), styleId: STYLES.metal() },
+      { mesh: cylinder(190, 85, "z", { x: 430, y: -480, z: 880 }), styleId: STYLES.dark() },
+      { mesh: box(2200, 980, 120, { z: 60 }), styleId: STYLES.dark() },
+    ],
+  }),
+  createDevice({
     code: "pump01",
     ifcClass: "IFCPUMP",
     name: "Level 9 Circulation Pump 01",
@@ -436,15 +468,183 @@ const devices = [
       { mesh: box(520, 380, 170, { x: -300, z: 120 }), styleId: STYLES.metal() },
     ],
   }),
+  createDevice({
+    code: "meter01",
+    ifcClass: "IFCFLOWMETER",
+    name: "Level 9 Electricity Meter 01",
+    description: "Wall-mounted electricity meter with display, buttons and cable conduit",
+    objectType: "Electricity Meter",
+    predefinedType: "ENERGYMETER",
+    assetCode: "EM-L09-001",
+    deviceId: "meter-l09-001",
+    mqttTopic: "marriott/level-09/electrical/EM-L09-001/telemetry",
+    pointTemplate: "electric_meter_kw_kwh_voltage_status",
+    manufacturer: "DemoMeter",
+    model: "DM-3P-100A",
+    status: "Online",
+    system: "electrical",
+    x: 20500,
+    y: 3900,
+    z: 1500,
+    parts: () => [
+      { mesh: box(380, 90, 520), styleId: STYLES.white() },
+      { mesh: box(260, 20, 120, { y: -55, z: 320 }), styleId: STYLES.glass() },
+      { mesh: box(70, 24, 34, { x: -80, y: -65, z: 170 }), styleId: STYLES.dark() },
+      { mesh: box(70, 24, 34, { y: -65, z: 170 }), styleId: STYLES.dark() },
+      { mesh: box(70, 24, 34, { x: 80, y: -65, z: 170 }), styleId: STYLES.dark() },
+      { mesh: cylinder(36, 300, "z", { y: 72, z: 520 }), styleId: STYLES.metal() },
+      { mesh: cylinder(30, 260, "z", { y: 72, z: -260 }), styleId: STYLES.metal() },
+    ],
+  }),
+  createDevice({
+    code: "camdome10",
+    ifcClass: "IFCAUDIOVISUALAPPLIANCE",
+    name: "Level 10 Dome Camera 01",
+    description: "Ceiling-mounted camera on Level 10 for operations floor switching demo",
+    objectType: "CCTV Dome Camera",
+    predefinedType: "CAMERA",
+    assetCode: "CAM-L10-001",
+    deviceId: "camera-l10-001",
+    mqttTopic: "marriott/level-10/camera/CAM-L10-001/status",
+    pointTemplate: "camera_online_recording_temperature",
+    manufacturer: "DemoVision",
+    model: "DV-DOME-4K",
+    status: "Online",
+    system: "cctv",
+    storey: LEVEL_10,
+    storeyPlacement: LEVEL_10_PLACEMENT,
+    floorName: "Level 10",
+    floorCode: "LEVEL-10",
+    x: 6200,
+    y: 7200,
+    z: 3100,
+    parts: () => [
+      { mesh: cylinder(190, 55, "z", { z: -55 }), styleId: STYLES.dark() },
+      { mesh: frustum(170, 145, 45, { z: -100 }), styleId: STYLES.metal() },
+      { mesh: hemisphere(145, { z: -100 }), styleId: STYLES.glass() },
+      { mesh: cylinder(42, 65, "y", { y: -25, z: -165 }), styleId: STYLES.dark() },
+    ],
+  }),
+  createDevice({
+    code: "tempsensor10",
+    ifcClass: "IFCSENSOR",
+    name: "Level 10 Temperature Sensor 01",
+    description: "Wall-mounted temperature sensor on Level 10",
+    objectType: "Temperature Sensor",
+    predefinedType: "TEMPERATURESENSOR",
+    assetCode: "SNS-TEMP-L10-001",
+    deviceId: "temp-l10-001",
+    mqttTopic: "marriott/level-10/sensor/SNS-TEMP-L10-001/telemetry",
+    pointTemplate: "temperature_humidity_battery_status",
+    manufacturer: "DemoSense",
+    model: "DS-TEMP-01",
+    status: "Normal",
+    system: "fire",
+    storey: LEVEL_10,
+    storeyPlacement: LEVEL_10_PLACEMENT,
+    floorName: "Level 10",
+    floorCode: "LEVEL-10",
+    x: 10800,
+    y: 7300,
+    z: 1500,
+    parts: () => [
+      { mesh: box(260, 65, 190), styleId: STYLES.white() },
+      { mesh: box(180, 20, 70, { y: -42, z: 75 }), styleId: STYLES.glass() },
+      { mesh: cylinder(14, 12, "z", { x: -75, y: -50, z: 34 }), styleId: STYLES.dark() },
+      { mesh: cylinder(14, 12, "z", { x: -25, y: -50, z: 34 }), styleId: STYLES.dark() },
+      { mesh: cylinder(14, 12, "z", { x: 25, y: -50, z: 34 }), styleId: STYLES.dark() },
+      { mesh: cylinder(14, 12, "z", { x: 75, y: -50, z: 34 }), styleId: STYLES.dark() },
+    ],
+  }),
+  createDevice({
+    code: "fan10",
+    ifcClass: "IFCFAN",
+    name: "Level 10 Extract Fan 01",
+    description: "Level 10 extract fan with blades and motor housing",
+    objectType: "Extract Fan",
+    predefinedType: "PROPELLORAXIAL",
+    assetCode: "FAN-L10-001",
+    deviceId: "fan-l10-001",
+    mqttTopic: "marriott/level-10/hvac/FAN-L10-001/telemetry",
+    pointTemplate: "fan_run_status_speed_vibration",
+    manufacturer: "DemoAir",
+    model: "DA-CEILING-1400",
+    status: "Warning",
+    system: "hvac",
+    storey: LEVEL_10,
+    storeyPlacement: LEVEL_10_PLACEMENT,
+    floorName: "Level 10",
+    floorCode: "LEVEL-10",
+    x: 15400,
+    y: 7600,
+    z: 3100,
+    parts: () => {
+      const parts = [
+        { mesh: cylinder(45, 380, "z", { z: -380 }), styleId: STYLES.metal() },
+        { mesh: cylinder(170, 160, "z", { z: -530 }), styleId: STYLES.dark() },
+        { mesh: cylinder(85, 55, "z", { z: -585 }), styleId: STYLES.metal() },
+      ];
+      for (let index = 0; index < 4; index++) {
+        const angle = (index / 4) * Math.PI * 2;
+        parts.push({
+          mesh: box(720, 150, 28, {
+            x: 430 * Math.cos(angle),
+            y: 430 * Math.sin(angle),
+            z: -548,
+            rotateZ: angle,
+          }),
+          styleId: STYLES.metal(),
+        });
+      }
+      return parts;
+    },
+  }),
+  createDevice({
+    code: "meter10",
+    ifcClass: "IFCFLOWMETER",
+    name: "Level 10 Electricity Meter 01",
+    description: "Wall-mounted electrical meter on Level 10",
+    objectType: "Electricity Meter",
+    predefinedType: "ENERGYMETER",
+    assetCode: "EM-L10-001",
+    deviceId: "meter-l10-001",
+    mqttTopic: "marriott/level-10/electrical/EM-L10-001/telemetry",
+    pointTemplate: "electric_meter_kw_kwh_voltage_status",
+    manufacturer: "DemoMeter",
+    model: "DM-3P-100A",
+    status: "Fault",
+    system: "electrical",
+    storey: LEVEL_10,
+    storeyPlacement: LEVEL_10_PLACEMENT,
+    floorName: "Level 10",
+    floorCode: "LEVEL-10",
+    x: 20500,
+    y: 7600,
+    z: 1500,
+    parts: () => [
+      { mesh: box(380, 90, 520), styleId: STYLES.white() },
+      { mesh: box(260, 20, 120, { y: -55, z: 320 }), styleId: STYLES.glass() },
+      { mesh: box(70, 24, 34, { x: -80, y: -65, z: 170 }), styleId: STYLES.dark() },
+      { mesh: box(70, 24, 34, { y: -65, z: 170 }), styleId: STYLES.dark() },
+      { mesh: box(70, 24, 34, { x: 80, y: -65, z: 170 }), styleId: STYLES.dark() },
+      { mesh: cylinder(36, 300, "z", { y: 72, z: 520 }), styleId: STYLES.metal() },
+      { mesh: cylinder(30, 260, "z", { y: 72, z: -260 }), styleId: STYLES.metal() },
+    ],
+  }),
 ];
 
-add(
-  `IFCRELCONTAINEDINSPATIALSTRUCTURE('${guid("containl09")}',${ref(
-    OWNER_HISTORY,
-  )},'Digital Twin demo equipment on Level 9',$,(${devices
-    .map((device) => ref(device.element))
-    .join(",")}),${ref(LEVEL_9)})`,
-);
+[
+  { storey: LEVEL_9, code: "containl09", name: "Digital Twin demo equipment on Level 9" },
+  { storey: LEVEL_10, code: "containl10", name: "Digital Twin demo equipment on Level 10" },
+].forEach(({ storey, code, name }) => {
+  const contained = devices.filter((device) => device.storey === storey);
+  if (!contained.length) return;
+  add(
+    `IFCRELCONTAINEDINSPATIALSTRUCTURE('${guid(code)}',${ref(
+      OWNER_HISTORY,
+    )},${text(name)},$,(${contained.map((device) => ref(device.element)).join(",")}),${ref(storey)})`,
+  );
+});
 
 function createSystem(code, name, predefinedType, deviceSystem) {
   const system = add(
@@ -472,6 +672,7 @@ createSystem("syslight", "Demo Lighting System", "ELECTRICAL", "lighting");
 createSystem("sysfire", "Demo Fire Detection System", "FIREPROTECTION", "fire");
 createSystem("syshvac", "Demo HVAC System", "VENTILATION", "hvac");
 createSystem("syshyd", "Demo Hydronic System", "HEATING", "hydronic");
+createSystem("syselectrical", "Demo Electrical Metering System", "ELECTRICAL", "electrical");
 
 const dataEnd = source.lastIndexOf("ENDSEC;");
 if (dataEnd < 0) throw new Error("Could not find IFC DATA section terminator.");
