@@ -5,6 +5,7 @@
     "specialties": ["Security", "Electrical"],
     "current_zone": "North Corridor",
     "position": { "x": 4200, "y": 3400, "z": 0, "unit": "mm" },
+    "site_position": { "x": 18, "y": -28, "unit": "m" },
     "availability": "Available"
   },
   {
@@ -13,6 +14,7 @@
     "specialties": ["HVAC", "Mechanical"],
     "current_zone": "Mechanical Area",
     "position": { "x": 17100, "y": 4500, "z": 0, "unit": "mm" },
+    "site_position": { "x": 132, "y": 20, "unit": "m" },
     "availability": "Available"
   },
   {
@@ -21,6 +23,7 @@
     "specialties": ["Electrical", "Fire Safety"],
     "current_zone": "Electrical Riser",
     "position": { "x": 19800, "y": 4100, "z": 0, "unit": "mm" },
+    "site_position": { "x": 155, "y": 92, "unit": "m" },
     "availability": "Available"
   },
   {
@@ -29,6 +32,7 @@
     "specialties": ["Fire Safety", "Security"],
     "current_zone": "South Corridor",
     "position": { "x": 10800, "y": 2800, "z": 0, "unit": "mm" },
+    "site_position": { "x": -72, "y": 18, "unit": "m" },
     "availability": "Busy"
   }
 ]

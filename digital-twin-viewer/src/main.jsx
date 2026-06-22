@@ -18,9 +18,10 @@ import {
   Search,
   Square,
   Upload,
-  UserRound,
 } from "lucide-react";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import * as OBC from "@thatopen/components";
 import "./styles.css";
 
@@ -166,6 +167,28 @@ function preferredIfcFile(files) {
   return files.find((file) => file.name === PREFERRED_IFC) || files[0] || null;
 }
 
+function assetBuildingId(asset) {
+  return asset?.building_id || "MARRIOTT_EQUIPMENT";
+}
+
+function buildingAssetSourceId(building) {
+  return building?.asset_source_building_id || building?.building_id || "";
+}
+
+function statusRank(status) {
+  return { Fault: 4, Offline: 3, Warning: 2, Normal: 1 }[status] || 0;
+}
+
+function aggregateStatus(assets) {
+  return assets.reduce((current, asset) => (statusRank(asset.status) > statusRank(current) ? asset.status : current), "Normal");
+}
+
+function buildingAssetsFor(building, assets) {
+  const sourceId = buildingAssetSourceId(building);
+  if (!sourceId) return [];
+  return assets.filter((asset) => assetBuildingId(asset) === sourceId);
+}
+
 function meters(value = 0) {
   return `${(value / 1000).toFixed(1)} m`;
 }
@@ -183,6 +206,19 @@ function distanceFromPointMeters(point, asset) {
   const dx = (point.x || 0) - (asset.position.x || 0);
   const dy = (point.y || 0) - (asset.position.y || 0);
   return Math.sqrt(dx * dx + dy * dy) / 1000;
+}
+
+function technicianSitePosition(tech) {
+  if (tech?.site_position) return tech.site_position;
+  if (tech?.position) return { x: (tech.position.x || 0) / 1000, y: (tech.position.y || 0) / 1000, unit: "m" };
+  return null;
+}
+
+function distanceSiteMeters(a, b) {
+  if (!a || !b) return Infinity;
+  const dx = (a.x || 0) - (b.x || 0);
+  const dy = (a.y || 0) - (b.y || 0);
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 function statusTone(status) {
@@ -401,6 +437,19 @@ function scoreTechnicians(technicians, asset) {
     .slice(0, 3);
 }
 
+function scoreTechniciansForBuilding(technicians, building) {
+  if (!building?.position) return [];
+  return technicians
+    .map((tech) => {
+      const sitePosition = technicianSitePosition(tech);
+      const distance = distanceSiteMeters(sitePosition, building.position);
+      const availabilityPenalty = tech.availability === "Available" ? 0 : 20;
+      const score = -distance - availabilityPenalty;
+      return { ...tech, sitePosition, skillMatch: 0, distance, score };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
 function propertyRows(object, asset) {
   const rows = [];
   if (object) {
@@ -435,6 +484,9 @@ function App() {
   const [uploadedIfcFiles, setUploadedIfcFiles] = useState([]);
   const [operationAssets, setOperationAssets] = useState([]);
   const [technicians, setTechnicians] = useState([]);
+  const [siteLayout, setSiteLayout] = useState(null);
+  const [viewMode, setViewMode] = useState("site");
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [floorplan, setFloorplan] = useState(null);
   const [selectedFileKey, setSelectedFileKey] = useState("");
   const [selectedObject, setSelectedObject] = useState(null);
@@ -483,17 +535,35 @@ function App() {
     () => assets.find((asset) => asset.asset_id === selectedAsset?.asset_id) || selectedAsset,
     [assets, selectedAsset],
   );
-  const alerts = useMemo(() => buildAlerts(assets), [assets]);
-  const types = useMemo(() => Array.from(new Set(assets.map((asset) => asset.asset_type))).sort(), [assets]);
-  const floors = useMemo(() => Array.from(new Set(assets.map((asset) => asset.floor))).sort(), [assets]);
-  const zones = useMemo(() => Array.from(new Set(assets.map((asset) => asset.zone))).sort(), [assets]);
+  const activeBuildingAssetSourceId = useMemo(() => buildingAssetSourceId(selectedBuilding), [selectedBuilding]);
+  const activeAssets = useMemo(() => {
+    if (viewMode !== "building" || !activeBuildingAssetSourceId) return assets;
+    return assets.filter((asset) => assetBuildingId(asset) === activeBuildingAssetSourceId);
+  }, [activeBuildingAssetSourceId, assets, viewMode]);
+  const alerts = useMemo(() => buildAlerts(activeAssets), [activeAssets]);
+  const types = useMemo(() => Array.from(new Set(activeAssets.map((asset) => asset.asset_type))).sort(), [activeAssets]);
+  const floors = useMemo(() => Array.from(new Set(activeAssets.map((asset) => asset.floor))).sort(), [activeAssets]);
+  const zones = useMemo(() => Array.from(new Set(activeAssets.map((asset) => asset.zone))).sort(), [activeAssets]);
+  const buildingStats = useMemo(() => {
+    const stats = new Map();
+    (siteLayout?.buildings || []).forEach((building) => {
+      const buildingAssets = buildingAssetsFor(building, assets);
+      const buildingAlerts = buildAlerts(buildingAssets);
+      stats.set(building.building_id, {
+        assetCount: buildingAssets.length,
+        alertCount: buildingAlerts.length,
+        status: buildingAssets.length ? aggregateStatus(buildingAssets) : "Normal",
+      });
+    });
+    return stats;
+  }, [assets, siteLayout]);
   const activeScenario = useMemo(
     () => SCENARIOS.find((scenario) => scenario.id === activeScenarioId) || SCENARIOS[0],
     [activeScenarioId],
   );
   const filteredAssets = useMemo(() => {
     const needle = filters.search.trim().toLowerCase();
-    return assets.filter((asset) => {
+    return activeAssets.filter((asset) => {
       const text = [asset.asset_id, asset.asset_name, asset.asset_type, asset.system, asset.location, asset.status]
         .join(" ")
         .toLowerCase();
@@ -507,10 +577,10 @@ function App() {
         (!filters.problemOnly || ["Warning", "Fault", "Offline"].includes(asset.status))
       );
     });
-  }, [assets, filters]);
+  }, [activeAssets, filters]);
   const spatialResults = useMemo(() => {
     if (!selectedRuntimeAsset) return [];
-    return assets
+    return activeAssets
       .filter((asset) => asset.asset_id !== selectedRuntimeAsset.asset_id)
       .map((asset) => ({ ...asset, distance: distanceMeters(asset, selectedRuntimeAsset) }))
       .filter((asset) => {
@@ -520,38 +590,51 @@ function App() {
         return true;
       })
       .sort((a, b) => a.distance - b.distance);
-  }, [assets, radius, selectedRuntimeAsset, spatialKind]);
+  }, [activeAssets, radius, selectedRuntimeAsset, spatialKind]);
   const route = useMemo(() => routeForAsset(selectedRuntimeAsset), [selectedRuntimeAsset]);
   const dispatchCandidates = useMemo(
     () => scoreTechnicians(technicians, selectedRuntimeAsset),
     [technicians, selectedRuntimeAsset],
   );
+  const siteDispatchCandidates = useMemo(
+    () => scoreTechniciansForBuilding(technicians, selectedBuilding),
+    [technicians, selectedBuilding],
+  );
   const relationships = useMemo(
-    () => buildAssetRelationships(selectedRuntimeAsset, assets),
-    [assets, selectedRuntimeAsset],
+    () => buildAssetRelationships(selectedRuntimeAsset, activeAssets),
+    [activeAssets, selectedRuntimeAsset],
   );
 
   useEffect(() => {
     async function bootstrap() {
-      const [fileRes, assetRes, techRes, floorplanRes] = await Promise.all([
+      const [fileRes, assetRes, techRes, floorplanRes, siteRes] = await Promise.all([
         fetch("/api/files"),
         fetch("/api/operations/assets"),
         fetch("/api/operations/technicians"),
         fetch("/api/operations/floorplan"),
+        fetch("/api/operations/site-layout"),
       ]);
       const fileData = await fileRes.json();
-      const assetData = await assetRes.json();
+      const assetData = (await assetRes.json()).map((asset) => ({
+        building_id: "MARRIOTT_EQUIPMENT",
+        ...asset,
+      }));
       const techData = await techRes.json();
       const floorplanData = await floorplanRes.json();
+      const siteData = await siteRes.json();
       setFiles(fileData);
       setOperationAssets(assetData);
       setTechnicians(techData);
+      setSiteLayout(siteData);
       setFloorplan(floorplanData);
       setTelemetryByDevice(initialTelemetry(assetData));
 
       const preferred = preferredIfcFile(fileData.ifcFiles || []);
       if (preferred) setSelectedFileKey(`output:${preferred.name}`);
       if (assetData[0]) setSelectedAsset(assetData[0]);
+      const defaultBuilding =
+        siteData?.buildings?.find((building) => building.ifc_file === PREFERRED_IFC) || siteData?.buildings?.[0] || null;
+      setSelectedBuilding(defaultBuilding);
       checkLlmStatus();
     }
     bootstrap().catch((error) => {
@@ -653,6 +736,7 @@ function App() {
 
   function handleAddAsset(form) {
     const asset = createMockAsset(form, selectedRuntimeAsset, operationAssets);
+    asset.building_id = activeBuildingAssetSourceId || asset.building_id || "MARRIOTT_EQUIPMENT";
     setOperationAssets((current) => [...current, asset]);
     setTelemetryByDevice((current) => ({
       ...current,
@@ -661,6 +745,29 @@ function App() {
     setSelectedAsset(asset);
     setSelectedObject(null);
     setAddAssetOpen(false);
+  }
+
+  function openBuilding(building) {
+    if (!building) return;
+    const file = allIfcFiles.find((item) => item.name === building.ifc_file);
+    setSelectedBuilding(building);
+    setViewMode("building");
+    if (file) setSelectedFileKey(file.key);
+    setSelectedObject(null);
+    const buildingAssets = buildingAssetsFor(building, assets);
+    setSelectedAsset(buildingAssets[0] || null);
+    setFilters({ search: "", type: "", floor: "", zone: "", status: "", specialty: "", problemOnly: false });
+    setViewerState({
+      status: "Idle",
+      message: file ? `Opening ${building.name}` : `IFC file not found: ${building.ifc_file}`,
+      progress: 0,
+    });
+  }
+
+  function backToSite() {
+    setViewMode("site");
+    setSelectedObject(null);
+    setViewerState({ status: "Ready", message: "Campus overview", progress: 100 });
   }
 
   const selectAsset = useCallback((asset, zoom = true) => {
@@ -768,7 +875,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell operations-shell">
+    <div className={`app-shell operations-shell ${viewMode === "building" ? "building-mode" : "site-mode"}`}>
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark">
@@ -781,6 +888,9 @@ function App() {
         </div>
 
         <div className="model-picker ops-picker">
+          <button className={`mode-chip ${viewMode === "site" ? "active" : ""}`} onClick={backToSite} type="button">
+            Campus
+          </button>
           <FileCode2 size={18} />
           <select value={selectedFileKey} onChange={(event) => setSelectedFileKey(event.target.value)}>
             {allIfcFiles.map((file) => (
@@ -807,10 +917,24 @@ function App() {
       <main className="workspace operations-workspace">
         <aside className="asset-rail operations-rail">
           <section className="summary-band">
-            <Metric icon={<Box size={18} />} label="Assets" value={assets.length} />
+            <Metric icon={<Building2 size={18} />} label="Buildings" value={siteLayout?.buildings?.length || 0} />
+            <Metric icon={<Box size={18} />} label="Assets" value={activeAssets.length} />
             <Metric icon={<Bell size={18} />} label="Alerts" value={alerts.length} />
-            <Metric icon={<Database size={18} />} label="Systems" value={new Set(assets.map((a) => a.system)).size} />
-            <Metric icon={<UserRound size={18} />} label="Technicians" value={technicians.length} />
+            <Metric icon={<Database size={18} />} label="Systems" value={new Set(activeAssets.map((a) => a.system)).size} />
+          </section>
+
+          <section className="ops-card campus-panel">
+            <h3>{viewMode === "site" ? "Campus Overview" : selectedBuilding?.name || "Building Detail"}</h3>
+            <p className="hint-text">
+              {viewMode === "site"
+                ? "Click a building preview to inspect it, then open the detailed IFC viewer."
+                : `Detail IFC: ${selectedBuilding?.ifc_file || selectedModel?.name || "n/a"}`}
+            </p>
+            {viewMode === "building" && (
+              <button className="primary-action" type="button" onClick={backToSite}>
+                Back to Campus
+              </button>
+            )}
           </section>
 
           <FilterPanel
@@ -856,46 +980,89 @@ function App() {
         </aside>
 
         <section className="viewer-stage operations-stage">
-          <div className="viewer-toolbar">
-            <StatusPill state={viewerState} />
-            <button className="icon-button" title="Locate selected asset" onClick={() => selectAsset(selectedRuntimeAsset)}>
-              <Crosshair size={18} />
-            </button>
-            <button className="icon-button" title="Reset camera" onClick={() => viewerRef.current?.resetCamera()}>
-              <RotateCcw size={18} />
-            </button>
-            <button className="icon-button" title="Fit model" onClick={() => viewerRef.current?.fitModel()}>
-              <Maximize2 size={18} />
-            </button>
-          </div>
+          {viewMode === "site" ? (
+            <CampusView
+              siteLayout={siteLayout}
+              buildingStats={buildingStats}
+              technicians={technicians}
+              selectedBuilding={selectedBuilding}
+              onSelectBuilding={setSelectedBuilding}
+              onOpenBuilding={openBuilding}
+            />
+          ) : (
+            <>
+              <div className="viewer-toolbar">
+                <StatusPill state={viewerState} />
+                <button className="icon-button" title="Back to campus" onClick={backToSite}>
+                  <Building2 size={18} />
+                </button>
+                <button className="icon-button" title="Locate selected asset" onClick={() => selectAsset(selectedRuntimeAsset)}>
+                  <Crosshair size={18} />
+                </button>
+                <button className="icon-button" title="Reset camera" onClick={() => viewerRef.current?.resetCamera()}>
+                  <RotateCcw size={18} />
+                </button>
+                <button className="icon-button" title="Fit model" onClick={() => viewerRef.current?.fitModel()}>
+                  <Maximize2 size={18} />
+                </button>
+              </div>
 
-          <ThatOpenCanvas
-            ref={viewerRef}
-            modelFile={selectedModel}
-            onPicked={handleObjectPicked}
-            onStateChange={setViewerState}
-          />
+              <ThatOpenCanvas
+                ref={viewerRef}
+                modelFile={selectedModel}
+                onPicked={handleObjectPicked}
+                onStateChange={setViewerState}
+              />
 
-          <div className="viewer-hint">
-            <MousePointer2 size={16} />
-            <span>Click the 3D model to inspect metadata. Use asset list, search, alerts, or Locate to draw the orange frame.</span>
-          </div>
+              <div className="viewer-hint">
+                <MousePointer2 size={16} />
+                <span>Building detail: inspect IFC metadata, locate assets, filter telemetry, and return to campus when needed.</span>
+              </div>
+            </>
+          )}
         </section>
 
         <aside className="property-panel operations-panel">
           <section className="panel-head">
             <div>
-              <span className="eyebrow">Selected Asset</span>
-              <h2>{selectedRuntimeAsset?.asset_name || selectedObject?.name || "No asset selected"}</h2>
+              <span className="eyebrow">{viewMode === "site" ? "Selected Building" : "Selected Asset"}</span>
+              <h2>
+                {viewMode === "site"
+                  ? selectedBuilding?.name || "No building selected"
+                  : selectedRuntimeAsset?.asset_name || selectedObject?.name || "No asset selected"}
+              </h2>
             </div>
-            {selectedRuntimeAsset ? (
+            {viewMode === "site" && selectedBuilding ? (
+              <StatusBadge status={buildingStats.get(selectedBuilding.building_id)?.status || "Normal"} />
+            ) : selectedRuntimeAsset ? (
               <StatusBadge status={selectedRuntimeAsset.status} />
             ) : (
               <AlertTriangle className="warn" size={22} />
             )}
           </section>
 
-          {selectedRuntimeAsset && (
+          {viewMode === "site" && selectedBuilding && (
+            <>
+              <CampusBuildingPanel
+                building={selectedBuilding}
+                stats={buildingStats.get(selectedBuilding.building_id)}
+                onOpen={() => openBuilding(selectedBuilding)}
+              />
+              <CampusSiteMap
+                siteLayout={siteLayout}
+                technicians={technicians}
+                selectedBuilding={selectedBuilding}
+                onSelectBuilding={setSelectedBuilding}
+              />
+              <DispatchPanel
+                asset={{ specialty: "Nearest campus response" }}
+                candidates={siteDispatchCandidates}
+                targetLabel={`Nearest technicians to ${selectedBuilding.name}`}
+              />
+            </>
+          )}
+
+          {viewMode === "building" && selectedRuntimeAsset && (
             <>
               <section className="link-state">
                 <Radar size={18} />
@@ -907,7 +1074,7 @@ function App() {
 
               <TelemetryCard asset={selectedRuntimeAsset} />
               <AssetMap
-                assets={assets}
+                assets={activeAssets}
                 floorplan={floorplan}
                 selectedAsset={selectedRuntimeAsset}
                 route={route}
@@ -927,18 +1094,20 @@ function App() {
             </>
           )}
 
-          <AlertPanel alerts={alerts} onSelect={(asset) => selectAsset(asset)} />
+          {viewMode === "building" && <AlertPanel alerts={alerts} onSelect={(asset) => selectAsset(asset)} />}
 
-          <dl className="property-grid">
-            {propertyRows(selectedObject, selectedRuntimeAsset).map(([label, value]) => (
-              <React.Fragment key={`${label}-${value}`}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </React.Fragment>
-            ))}
-          </dl>
+          {viewMode === "building" && (
+            <dl className="property-grid">
+              {propertyRows(selectedObject, selectedRuntimeAsset).map(([label, value]) => (
+                <React.Fragment key={`${label}-${value}`}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </React.Fragment>
+              ))}
+            </dl>
+          )}
 
-          {selectedObject?.ifcProperties && <JsonBlock title="IFC Properties" value={selectedObject.ifcProperties} />}
+          {viewMode === "building" && selectedObject?.ifcProperties && <JsonBlock title="IFC Properties" value={selectedObject.ifcProperties} />}
         </aside>
       </main>
     </div>
@@ -1308,11 +1477,11 @@ function SystemRelationshipPanel({ relationships, onSelect }) {
   );
 }
 
-function DispatchPanel({ asset, candidates }) {
+function DispatchPanel({ asset, candidates, targetLabel }) {
   return (
     <section className="ops-card">
       <h3>Technician Dispatch</h3>
-      <p className="hint-text">Required specialty: {asset.specialty}</p>
+      <p className="hint-text">{targetLabel || `Required specialty: ${asset.specialty}`}</p>
       <div className="tech-list">
         {candidates.map((tech, index) => (
           <div className="tech-row" key={tech.technician_id}>
@@ -1326,6 +1495,102 @@ function DispatchPanel({ asset, candidates }) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+function buildingFootprint(building) {
+  const size = building?.size || { width: 30, depth: 24 };
+  const cx = building?.position?.x || 0;
+  const cy = building?.position?.y || 0;
+  const halfWidth = (size.width || 30) / 2;
+  const halfDepth = (size.depth || 24) / 2;
+  const rotation = THREE.MathUtils.degToRad(building?.rotation_deg || 0);
+  return [
+    { x: -halfWidth, y: -halfDepth },
+    { x: halfWidth, y: -halfDepth },
+    { x: halfWidth, y: halfDepth },
+    { x: -halfWidth, y: halfDepth },
+  ].map((point) => ({
+    x: cx + point.x * Math.cos(rotation) - point.y * Math.sin(rotation),
+    y: cy + point.x * Math.sin(rotation) + point.y * Math.cos(rotation),
+  }));
+}
+
+function CampusSiteMap({ siteLayout, technicians, selectedBuilding, onSelectBuilding }) {
+  const width = 360;
+  const height = 280;
+  const bounds = siteLayout?.bounds || { minX: -120, maxX: 240, minY: -110, maxY: 180 };
+  const project = (point) => {
+    const x = ((point.x - bounds.minX) / (bounds.maxX - bounds.minX || 1)) * width;
+    const y = height - ((point.y - bounds.minY) / (bounds.maxY - bounds.minY || 1)) * height;
+    return { x, y };
+  };
+  const polygonPoints = (polygon = []) =>
+    polygon
+      .map((point) => {
+        const projected = project(point);
+        return `${projected.x.toFixed(1)},${projected.y.toFixed(1)}`;
+      })
+      .join(" ");
+  const linePoints = (points = []) =>
+    points
+      .map((point) => {
+        const projected = project(point);
+        return `${projected.x.toFixed(1)},${projected.y.toFixed(1)}`;
+      })
+      .join(" ");
+
+  return (
+    <section className="ops-card">
+      <h3>2D Campus Map</h3>
+      <svg className="asset-map campus-map-2d" viewBox={`0 0 ${width} ${height}`} role="img">
+        <rect x="1" y="1" width={width - 2} height={height - 2} rx="10" />
+        <g className="site-parcels">
+          {(siteLayout?.land_parcels || []).map((parcel) => (
+            <polygon key={parcel.parcel_id} points={polygonPoints(parcel.polygon)} />
+          ))}
+        </g>
+        <g className="site-roads">
+          {(siteLayout?.roads || []).map((road) => (
+            <polyline key={road.road_id} points={linePoints(road.centerline)} style={{ strokeWidth: road.width_m || 8 }} />
+          ))}
+        </g>
+        <g className="site-buildings">
+          {(siteLayout?.buildings || []).map((building) => {
+            const center = project(building.position);
+            const selected = building.building_id === selectedBuilding?.building_id;
+            return (
+              <g
+                className={`site-building ${selected ? "selected" : ""}`}
+                key={building.building_id}
+                onClick={() => onSelectBuilding(building)}
+              >
+                <polygon points={polygonPoints(buildingFootprint(building))} />
+                <text x={center.x} y={center.y}>{building.name}</text>
+                <title>{building.name}</title>
+              </g>
+            );
+          })}
+        </g>
+        <g className="site-technicians">
+          {technicians.map((tech) => {
+            const sitePosition = technicianSitePosition(tech);
+            if (!sitePosition) return null;
+            const point = project(sitePosition);
+            return (
+              <g className={`tech-point ${tech.availability === "Available" ? "available" : "busy"}`} key={tech.technician_id}>
+                <circle cx={point.x} cy={point.y} r="6" />
+                <text x={point.x + 8} y={point.y - 6}>{tech.name.split(" ").slice(-1)[0]}</text>
+                <title>
+                  {tech.name} / {tech.specialties.join(", ")} / {tech.availability}
+                </title>
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+      <p className="hint-text">Technicians are positioned outside buildings; dispatch ranks them by distance to the selected building.</p>
     </section>
   );
 }
@@ -1363,7 +1628,7 @@ function AssetMap({ assets, floorplan, selectedAsset, route, onSelect }) {
 
   return (
     <section className="ops-card">
-      <h3>2D Floor Plan & Route</h3>
+      <h3>2D Floor Plan & Route ({floorplan?.floor || "Level 9"})</h3>
       <svg className="asset-map" viewBox={`0 0 ${width} ${height}`} role="img">
         <rect x="1" y="1" width={width - 2} height={height - 2} rx="10" />
         <text x="12" y="22">{floorplan?.floor || "Level 9"} IFC-derived floor plan</text>
@@ -1414,6 +1679,402 @@ function AssetMap({ assets, floorplan, selectedAsset, route, onSelect }) {
         Footprint extracted from IFC mesh. Route to {selectedAsset?.asset_id}; target height {meters(selectedAsset?.position?.z || 0)}.
       </p>
     </section>
+  );
+}
+
+function CampusBuildingPanel({ building, stats, onOpen }) {
+  return (
+    <section className="ops-card campus-detail-card">
+      <h3>Building Detail</h3>
+      <dl className="campus-detail-grid">
+        <dt>Building ID</dt>
+        <dd>{building.building_id}</dd>
+        <dt>IFC file</dt>
+        <dd>{building.ifc_file}</dd>
+        <dt>Floors</dt>
+        <dd>{building.floors || "n/a"}</dd>
+        <dt>Assets</dt>
+        <dd>{stats?.assetCount || 0}</dd>
+        <dt>Alerts</dt>
+        <dd>{stats?.alertCount || 0}</dd>
+      </dl>
+      <p className="hint-text">{building.description}</p>
+      <button className="primary-action" type="button" onClick={onOpen}>
+        Open IFC Detail
+      </button>
+    </section>
+  );
+}
+
+function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, onSelectBuilding, onOpenBuilding }) {
+  const containerRef = useRef(null);
+  const selectedBuildingId = selectedBuilding?.building_id || "";
+  const onSelectRef = useRef(onSelectBuilding);
+  const onOpenRef = useRef(onOpenBuilding);
+  const sceneRef = useRef(null);
+  const selectedOutlineRef = useRef(null);
+  const statsKey = useMemo(
+    () =>
+      JSON.stringify(
+        (siteLayout?.buildings || []).map((building) => {
+          const stats = buildingStats.get(building.building_id) || {};
+          return [building.building_id, stats.status || "Normal", stats.assetCount || 0, stats.alertCount || 0];
+        }),
+      ),
+    [buildingStats, siteLayout],
+  );
+
+  useEffect(() => {
+    onSelectRef.current = onSelectBuilding;
+    onOpenRef.current = onOpenBuilding;
+  }, [onOpenBuilding, onSelectBuilding]);
+
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    if (selectedOutlineRef.current) {
+      scene.remove(selectedOutlineRef.current);
+      selectedOutlineRef.current.geometry?.dispose?.();
+      selectedOutlineRef.current.material?.dispose?.();
+      selectedOutlineRef.current = null;
+    }
+    if (!selectedBuilding) return;
+    const footprint = buildingFootprint(selectedBuilding);
+    const points = footprint
+      .concat(footprint[0])
+      .map((point) => new THREE.Vector3(point.x, 0.32, point.y));
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({
+      color: 0xf59e0b,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: false,
+    });
+    const outline = new THREE.Line(geometry, material);
+    outline.renderOrder = 20;
+    scene.add(outline);
+    selectedOutlineRef.current = outline;
+  }, [selectedBuilding]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !siteLayout) return undefined;
+
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
+    scene.background = new THREE.Color(0x0f172a);
+    scene.fog = new THREE.Fog(0x0f172a, 220, 520);
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 600;
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 2000);
+    camera.position.set(105, 180, 220);
+    camera.lookAt(40, 0, 25);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(width, height);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(45, 25, 10);
+    controls.enableDamping = true;
+    controls.maxPolarAngle = Math.PI * 0.47;
+    controls.minDistance = 80;
+    controls.maxDistance = 480;
+
+    scene.add(new THREE.HemisphereLight(0xdbeafe, 0x172033, 2.2));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.4);
+    sun.position.set(90, 180, 80);
+    sun.castShadow = true;
+    scene.add(sun);
+
+    const bounds = siteLayout.bounds || { minX: -120, maxX: 240, minY: -110, maxY: 180 };
+    const siteWidth = bounds.maxX - bounds.minX;
+    const siteDepth = bounds.maxY - bounds.minY;
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(siteWidth + 80, siteDepth + 80),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.92, metalness: 0.02 }),
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set((bounds.minX + bounds.maxX) / 2, -0.05, (bounds.minY + bounds.maxY) / 2);
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const parcelMaterial = new THREE.MeshStandardMaterial({
+      color: 0x164e63,
+      transparent: true,
+      opacity: 0.58,
+      roughness: 0.85,
+    });
+    (siteLayout.land_parcels || []).forEach((parcel) => {
+      const shape = new THREE.Shape(parcel.polygon.map((point) => new THREE.Vector2(point.x, point.y)));
+      const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape), parcelMaterial);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = 0.02;
+      scene.add(mesh);
+    });
+
+    const roadMaterial = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.78 });
+    (siteLayout.roads || []).forEach((road) => {
+      for (let index = 0; index < (road.centerline || []).length - 1; index++) {
+        const start = road.centerline[index];
+        const end = road.centerline[index + 1];
+        const dx = end.x - start.x;
+        const dz = end.y - start.y;
+        const length = Math.hypot(dx, dz);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(length, 0.12, road.width_m || 8), roadMaterial);
+        mesh.position.set((start.x + end.x) / 2, 0.08, (start.y + end.y) / 2);
+        mesh.rotation.y = -Math.atan2(dz, dx);
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+      }
+    });
+
+    const buildingMeshes = [];
+    const loader = new GLTFLoader();
+    let disposed = false;
+
+    function makeTextSprite(text, color = "#e2e8f0") {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.width = 256;
+      canvas.height = 64;
+      context.font = "700 24px Arial";
+      context.fillStyle = "rgba(15, 23, 42, 0.68)";
+      context.strokeStyle = "rgba(103, 232, 249, 0.5)";
+      context.lineWidth = 2;
+      if (context.roundRect) {
+        context.beginPath();
+        context.roundRect(4, 8, 248, 44, 12);
+      } else {
+        context.beginPath();
+        context.rect(4, 8, 248, 44);
+      }
+      context.fill();
+      context.stroke();
+      context.fillStyle = color;
+      context.fillText(text, 18, 38);
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(28, 7, 1);
+      sprite.renderOrder = 30;
+      return sprite;
+    }
+
+    function addTechnicianMarker(tech) {
+      const sitePosition = technicianSitePosition(tech);
+      if (!sitePosition) return;
+      const available = tech.availability === "Available";
+      const group = new THREE.Group();
+      group.name = `${tech.technician_id}_site_marker`;
+      group.position.set(sitePosition.x, 0.35, sitePosition.y);
+      const marker = new THREE.Mesh(
+        new THREE.SphereGeometry(2.2, 20, 12),
+        new THREE.MeshStandardMaterial({
+          color: available ? 0x22c55e : 0xf97316,
+          emissive: available ? 0x064e3b : 0x7c2d12,
+          emissiveIntensity: 0.45,
+          roughness: 0.42,
+        }),
+      );
+      marker.castShadow = true;
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.45, 0.45, 4.8, 12),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.5 }),
+      );
+      stem.position.y = 2.2;
+      marker.position.y = 5;
+      const label = makeTextSprite(tech.name.split(" ").slice(-1)[0], available ? "#bbf7d0" : "#fed7aa");
+      label.position.set(9, 8, 0);
+      group.add(stem, marker, label);
+      scene.add(group);
+    }
+
+    function buildingStatusColor(building) {
+      const stats = buildingStats.get(building.building_id) || {};
+      return new THREE.Color(STATUS_COLORS[stats.status] || building.color || "#38bdf8");
+    }
+
+    function makeBuildingPlaceholder(building, size) {
+      const material = new THREE.MeshStandardMaterial({
+        color: buildingStatusColor(building),
+        roughness: 0.45,
+        metalness: 0.06,
+        transparent: true,
+        opacity: 0.1,
+      });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.width, size.height, size.depth), material);
+      mesh.position.set(building.position.x, size.height / 2, building.position.y);
+      mesh.rotation.y = THREE.MathUtils.degToRad(-(building.rotation_deg || 0));
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.userData.building = building;
+      mesh.userData.isPlaceholder = true;
+      scene.add(mesh);
+      buildingMeshes.push(mesh);
+      return mesh;
+    }
+
+    function fitPreviewToBuilding(preview, building, size) {
+      const box = new THREE.Box3().setFromObject(preview);
+      const modelSize = box.getSize(new THREE.Vector3());
+      const modelCenter = box.getCenter(new THREE.Vector3());
+      const scale = Math.min(
+        size.width / Math.max(modelSize.x, 0.001),
+        size.depth / Math.max(modelSize.z, 0.001),
+        size.height / Math.max(modelSize.y, 0.001),
+      );
+      preview.position.sub(modelCenter);
+      preview.scale.setScalar(scale);
+      preview.rotation.y = THREE.MathUtils.degToRad(-(building.rotation_deg || 0));
+      preview.position.add(new THREE.Vector3(building.position.x, 0, building.position.y));
+      preview.updateMatrixWorld(true);
+
+      const fittedBox = new THREE.Box3().setFromObject(preview);
+      preview.position.y -= fittedBox.min.y;
+      preview.updateMatrixWorld(true);
+    }
+
+    function tintPreviewForStatus(preview, building) {
+      const color = buildingStatusColor(building);
+      preview.traverse((object) => {
+        if (!object.isMesh) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        object.userData.building = building;
+        const originalWasArray = Array.isArray(object.material);
+        const materials = originalWasArray ? object.material : [object.material];
+        object.material = materials.map((material) => {
+          if (!material?.clone) return material;
+          const clone = material.clone();
+          clone.transparent = true;
+          clone.opacity = Math.min(clone.opacity || 1, 0.86);
+          clone.color.lerp(color, 0.12);
+          return clone;
+        });
+        if (!originalWasArray) object.material = object.material[0];
+      });
+    }
+
+    (siteLayout.buildings || []).forEach((building) => {
+      const size = building.size || { width: 30, depth: 24, height: 30 };
+
+      if (building.preview_glb) {
+        loader.load(
+          building.preview_glb,
+          (gltf) => {
+            if (disposed) return;
+            const preview = gltf.scene;
+            preview.name = `${building.building_id}_preview`;
+            tintPreviewForStatus(preview, building);
+            fitPreviewToBuilding(preview, building, size);
+            scene.add(preview);
+            preview.traverse((object) => {
+              if (object.isMesh) buildingMeshes.push(object);
+            });
+          },
+          undefined,
+          (error) => {
+            console.warn(`Failed to load preview GLB for ${building.building_id}`, error);
+            if (!disposed) makeBuildingPlaceholder(building, size);
+          },
+        );
+      } else {
+        makeBuildingPlaceholder(building, size);
+      }
+    });
+
+    (technicians || []).forEach(addTechnicianMarker);
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let pointerDown = null;
+
+    function pick(event, open = false) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(buildingMeshes, false)[0];
+      if (!hit?.object?.userData?.building) return;
+      onSelectRef.current(hit.object.userData.building);
+      if (open) onOpenRef.current(hit.object.userData.building);
+    }
+
+    function onPointerDown(event) {
+      pointerDown = { x: event.clientX, y: event.clientY };
+    }
+
+    function onClick(event) {
+      if (pointerDown && Math.hypot(event.clientX - pointerDown.x, event.clientY - pointerDown.y) > PICK_DRAG_THRESHOLD_PX) return;
+      pick(event, false);
+    }
+
+    function onDoubleClick(event) {
+      pick(event, true);
+    }
+
+    renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("click", onClick);
+    renderer.domElement.addEventListener("dblclick", onDoubleClick);
+
+    function animate() {
+      if (disposed) return;
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    function resize() {
+      const nextWidth = container.clientWidth || width;
+      const nextHeight = container.clientHeight || height;
+      camera.aspect = nextWidth / nextHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(nextWidth, nextHeight);
+    }
+    window.addEventListener("resize", resize);
+
+    return () => {
+      disposed = true;
+      window.removeEventListener("resize", resize);
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("click", onClick);
+      renderer.domElement.removeEventListener("dblclick", onDoubleClick);
+      controls.dispose();
+      scene.traverse((object) => {
+        object.geometry?.dispose?.();
+        if (Array.isArray(object.material)) {
+          object.material.forEach((material) => {
+            material.map?.dispose?.();
+            material.dispose?.();
+          });
+        } else {
+          object.material?.map?.dispose?.();
+          object.material?.dispose?.();
+        }
+      });
+      renderer.dispose();
+      renderer.domElement.remove();
+      if (sceneRef.current === scene) sceneRef.current = null;
+      selectedOutlineRef.current = null;
+    };
+  }, [siteLayout, statsKey, technicians]);
+
+  return (
+    <div className="campus-view">
+      <div ref={containerRef} className="campus-canvas" />
+      <div className="campus-overlay">
+        <span className="eyebrow">Campus View</span>
+        <h2>{siteLayout?.name || "Demo Campus"}</h2>
+        <p>
+          {siteLayout?.buildings?.length || 0} IFC buildings / {siteLayout?.roads?.length || 0} roads / click a building preview to inspect.
+        </p>
+      </div>
+    </div>
   );
 }
 

@@ -1,0 +1,203 @@
+{
+  "site_id": "DEMO_CAMPUS",
+  "name": "Demo IFC Campus",
+  "unit": "m",
+  "bounds": {
+    "minX": -120,
+    "maxX": 240,
+    "minY": -110,
+    "maxY": 180
+  },
+  "land_parcels": [
+    {
+      "parcel_id": "P-CAMPUS-01",
+      "name": "Main Campus Parcel",
+      "polygon": [
+        {
+          "x": -105,
+          "y": -85
+        },
+        {
+          "x": 225,
+          "y": -85
+        },
+        {
+          "x": 225,
+          "y": 160
+        },
+        {
+          "x": -105,
+          "y": 160
+        }
+      ]
+    },
+    {
+      "parcel_id": "P-GARDEN-01",
+      "name": "Central Landscape",
+      "polygon": [
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 95,
+          "y": 10
+        },
+        {
+          "x": 95,
+          "y": 75
+        },
+        {
+          "x": 10,
+          "y": 75
+        }
+      ]
+    }
+  ],
+  "roads": [
+    {
+      "road_id": "R-MAIN",
+      "name": "Main Access Road",
+      "width_m": 14,
+      "centerline": [
+        {
+          "x": -115,
+          "y": -22
+        },
+        {
+          "x": 235,
+          "y": -22
+        }
+      ]
+    },
+    {
+      "road_id": "R-NORTH",
+      "name": "North Service Road",
+      "width_m": 10,
+      "centerline": [
+        {
+          "x": -92,
+          "y": 118
+        },
+        {
+          "x": 210,
+          "y": 118
+        }
+      ]
+    },
+    {
+      "road_id": "R-EAST",
+      "name": "East Connector",
+      "width_m": 10,
+      "centerline": [
+        {
+          "x": 155,
+          "y": -80
+        },
+        {
+          "x": 155,
+          "y": 155
+        }
+      ]
+    },
+    {
+      "road_id": "R-WEST",
+      "name": "West Connector",
+      "width_m": 8,
+      "centerline": [
+        {
+          "x": -55,
+          "y": -78
+        },
+        {
+          "x": -55,
+          "y": 145
+        }
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "building_id": "NHA_1",
+      "name": "Nha 1",
+      "ifc_file": "Nha1.ifc",
+      "position": {
+        "x": -48,
+        "y": 48,
+        "z": 0
+      },
+      "rotation_deg": -8,
+      "size": {
+        "width": 46,
+        "depth": 34,
+        "height": 42
+      },
+      "floors": 10,
+      "color": "#38bdf8",
+      "description": "IFC building model loaded as detail view.",
+      "preview_glb": "/model-previews/Nha1.glb"
+    },
+    {
+      "building_id": "NHA_2",
+      "name": "Nha 2",
+      "ifc_file": "Nha2.ifc",
+      "position": {
+        "x": 145,
+        "y": 48,
+        "z": 0
+      },
+      "rotation_deg": 12,
+      "size": {
+        "width": 40,
+        "depth": 30,
+        "height": 34
+      },
+      "floors": 8,
+      "color": "#22c55e",
+      "description": "IFC building model loaded as detail view.",
+      "preview_glb": "/model-previews/Nha2.glb"
+    },
+    {
+      "building_id": "MARRIOTT_EQUIPMENT",
+      "name": "Marriott Equipment",
+      "ifc_file": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+      "asset_source_building_id": "MARRIOTT_EQUIPMENT",
+      "position": {
+        "x": 48,
+        "y": -58,
+        "z": 0
+      },
+      "rotation_deg": 0,
+      "size": {
+        "width": 72,
+        "depth": 40,
+        "height": 76
+      },
+      "floors": 19,
+      "color": "#f59e0b",
+      "description": "Operations demo building with equipment registry.",
+      "preview_glb": "/model-previews/20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.glb"
+    },
+    {
+      "building_id": "MARRIOTT_FIXED",
+      "name": "Marriott Fixed",
+      "ifc_file": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment_level09_level10_fixed.ifc",
+      "asset_source_building_id": "MARRIOTT_EQUIPMENT",
+      "position": {
+        "x": 170,
+        "y": 122,
+        "z": 0
+      },
+      "rotation_deg": -18,
+      "size": {
+        "width": 68,
+        "depth": 38,
+        "height": 76
+      },
+      "floors": 19,
+      "color": "#a78bfa",
+      "description": "Alternative fixed IFC using the same demo equipment asset registry.",
+      "preview_glb": "/model-previews/20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment_level09_level10_fixed.glb"
+    }
+  ]
+}

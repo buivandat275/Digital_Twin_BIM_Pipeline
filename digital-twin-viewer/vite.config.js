@@ -433,6 +433,11 @@ function digitalTwinApi() {
           return;
         }
 
+        if (url.pathname === "/api/operations/site-layout") {
+          sendJson(res, readJson(path.join(mockDbDir, "site-layout.json"), null));
+          return;
+        }
+
         if (url.pathname === "/api/operations/floorplan") {
           const floor = url.searchParams.get("floor") || "Level 9";
           const floorplanFile =
