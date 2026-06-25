@@ -614,10 +614,39 @@ select {
   font-weight: 800;
 }
 
+.active-chip.muted {
+  color: #075985;
+  background: #e0f2fe;
+}
+
+.active-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .filter-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.quality-filter-row label {
+  display: grid;
+  gap: 4px;
+  color: #64727a;
+  font-size: 12px;
+}
+
+.quality-filter-row select {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid #c7d0d4;
+  border-radius: 7px;
+  padding: 0 8px;
+  color: #182329;
+  background: #ffffff;
 }
 
 .select-filter {
@@ -794,6 +823,77 @@ select {
   color: #172024;
 }
 
+.quality-grid,
+.mapping-detail-panel {
+  display: grid;
+  gap: 7px;
+}
+
+.quality-grid,
+.quality-check-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  font-size: 12px;
+}
+
+.quality-grid {
+  display: grid;
+}
+
+.quality-grid span,
+.quality-check-row span {
+  color: #66737a;
+}
+
+.quality-grid strong,
+.quality-check-row strong {
+  color: #172024;
+}
+
+.quality-meter {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.quality-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0891b2, #22c55e);
+}
+
+.quality-score,
+.quality-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.quality-score.ready,
+.quality-badge.ready,
+.quality-check-row.ok strong {
+  color: #047857;
+  background: #dcfce7;
+}
+
+.quality-score.warning {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.quality-score.fault,
+.quality-badge.issue,
+.quality-check-row.missing strong {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
 .ops-card small,
 .hint-text,
 .empty-state {
@@ -804,13 +904,17 @@ select {
 
 .alert-list,
 .nearby-list,
-.tech-list {
+.tech-list,
+.incident-list,
+.work-order-list {
   display: grid;
   gap: 8px;
 }
 
 .alert-row,
-.nearby-list button {
+.nearby-list button,
+.incident-row,
+.work-order-row {
   display: grid;
   gap: 3px;
   width: 100%;
@@ -838,11 +942,75 @@ select {
 }
 
 .alert-row span,
+.incident-row span,
+.incident-row em,
+.work-order-row span,
+.work-order-row em,
 .nearby-list span,
 .nearby-list em,
 .tech-row span {
   color: #66737a;
   font-size: 12px;
+}
+
+.incident-row.active,
+.work-order-row.active {
+  border-color: #22d3ee;
+  background: #ecfeff;
+}
+
+.incident-detail,
+.work-order-detail {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #d8e0e3;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafb;
+  font-size: 12px;
+}
+
+.incident-detail span,
+.work-order-detail span {
+  color: #66737a;
+}
+
+.estimate-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(8, 145, 178, 0.2);
+  border-radius: 10px;
+  padding: 9px;
+  background: rgba(8, 145, 178, 0.08);
+}
+
+.estimate-card strong {
+  color: #0f4f59;
+}
+
+.estimate-card span {
+  color: #566870;
+}
+
+.incident-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.incident-actions button {
+  min-height: 28px;
+  border: 1px solid #c7d0d4;
+  border-radius: 8px;
+  padding: 0 8px;
+  color: #26363d;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.incident-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 .nearby-list button {
@@ -963,6 +1131,17 @@ select {
   stroke-dasharray: none;
 }
 
+.campus-map-2d .site-route polyline {
+  fill: none;
+  stroke: #38bdf8;
+  stroke-opacity: 0.96;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 9 6;
+  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.45));
+}
+
 .campus-map-2d .site-building {
   cursor: pointer;
 }
@@ -981,6 +1160,11 @@ select {
   stroke-width: 2;
 }
 
+.campus-map-2d .site-building.has-alert polygon {
+  stroke: #ef4444;
+  stroke-width: 2;
+}
+
 .campus-map-2d .site-building text {
   fill: #dbeafe;
   font-size: 7px;
@@ -989,14 +1173,38 @@ select {
   text-anchor: middle;
 }
 
+.campus-map-2d .site-alert-badge circle {
+  fill: #dc2626;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.campus-map-2d .site-alert-badge text {
+  fill: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
 .campus-map-2d .tech-point circle {
   fill: #22c55e;
   stroke: #f8fafc;
   stroke-width: 2;
 }
 
+.campus-map-2d .tech-point {
+  cursor: pointer;
+}
+
 .campus-map-2d .tech-point.busy circle {
   fill: #f97316;
+}
+
+.campus-map-2d .tech-point.selected circle {
+  fill: #38bdf8;
+  stroke: #facc15;
+  stroke-width: 3;
 }
 
 .campus-map-2d .tech-point text {
@@ -1017,6 +1225,16 @@ select {
   border: 1px solid #d8e0e3;
   border-radius: 8px;
   background: #f8fafb;
+}
+
+.tech-row[role="button"] {
+  cursor: pointer;
+}
+
+.tech-row.active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.14);
+  box-shadow: inset 3px 0 0 #38bdf8;
 }
 
 .relationship-panel {
@@ -1300,6 +1518,10 @@ select {
 .operations-shell .property-grid,
 .operations-shell .json-block pre,
 .operations-shell .alert-row,
+.operations-shell .incident-row,
+.operations-shell .incident-detail,
+.operations-shell .work-order-row,
+.operations-shell .work-order-detail,
 .operations-shell .nearby-list button,
 .operations-shell .tech-row,
 .operations-shell .llm-status,
@@ -1328,10 +1550,18 @@ select {
 .operations-shell .empty-state,
 .operations-shell .ops-card small,
 .operations-shell .alert-row span,
+.operations-shell .incident-row span,
+.operations-shell .incident-row em,
+.operations-shell .incident-detail span,
+.operations-shell .work-order-row span,
+.operations-shell .work-order-row em,
+.operations-shell .work-order-detail span,
 .operations-shell .nearby-list span,
 .operations-shell .nearby-list em,
 .operations-shell .tech-row span,
 .operations-shell .telemetry-grid span,
+.operations-shell .quality-grid span,
+.operations-shell .quality-check-row span,
 .operations-shell .nl-result,
 .operations-shell .add-asset-form label,
 .operations-shell .relationship-group span,
@@ -1347,6 +1577,12 @@ select {
 .operations-shell .nearby-list strong,
 .operations-shell .tech-row strong,
 .operations-shell .telemetry-grid strong,
+.operations-shell .quality-grid strong,
+.operations-shell .quality-check-row strong,
+.operations-shell .incident-row strong,
+.operations-shell .incident-detail strong,
+.operations-shell .work-order-row strong,
+.operations-shell .work-order-detail strong,
 .operations-shell .property-grid dd,
 .operations-shell .relationship-group > strong,
 .operations-shell .relationship-group em,
@@ -1374,6 +1610,35 @@ select {
   box-shadow:
     inset 3px 0 0 #22d3ee,
     0 14px 28px rgba(8, 145, 178, 0.14);
+}
+
+.operations-shell .incident-row.active,
+.operations-shell .work-order-row.active {
+  border-color: rgba(34, 211, 238, 0.72);
+  background: rgba(8, 145, 178, 0.24);
+}
+
+.operations-shell .incident-actions button {
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #e2e8f0;
+  background: rgba(30, 41, 59, 0.42);
+}
+
+.operations-shell .estimate-card {
+  border-color: rgba(34, 211, 238, 0.22);
+  background: rgba(8, 145, 178, 0.18);
+}
+
+.operations-shell .estimate-card strong {
+  color: #ffffff;
+}
+
+.operations-shell .estimate-card span {
+  color: #cbd5e1;
+}
+
+.operations-shell .quality-meter {
+  background: rgba(148, 163, 184, 0.24);
 }
 
 .operations-shell .asset-type,
@@ -1500,6 +1765,10 @@ select {
 .operations-shell.building-mode .property-grid,
 .operations-shell.building-mode .json-block pre,
 .operations-shell.building-mode .alert-row,
+.operations-shell.building-mode .incident-row,
+.operations-shell.building-mode .incident-detail,
+.operations-shell.building-mode .work-order-row,
+.operations-shell.building-mode .work-order-detail,
 .operations-shell.building-mode .nearby-list button,
 .operations-shell.building-mode .tech-row,
 .operations-shell.building-mode .llm-status,
@@ -1514,6 +1783,14 @@ select {
 .operations-shell.building-mode .asset-row span,
 .operations-shell.building-mode .link-state span,
 .operations-shell.building-mode .telemetry-grid span,
+.operations-shell.building-mode .quality-grid span,
+.operations-shell.building-mode .quality-check-row span,
+.operations-shell.building-mode .incident-row span,
+.operations-shell.building-mode .incident-row em,
+.operations-shell.building-mode .incident-detail span,
+.operations-shell.building-mode .work-order-row span,
+.operations-shell.building-mode .work-order-row em,
+.operations-shell.building-mode .work-order-detail span,
 .operations-shell.building-mode .nearby-list span,
 .operations-shell.building-mode .nearby-list em,
 .operations-shell.building-mode .tech-row span,
@@ -1529,7 +1806,11 @@ select {
 .operations-shell.building-mode .link-state strong,
 .operations-shell.building-mode .telemetry-grid strong,
 .operations-shell.building-mode .asset-row strong,
-.operations-shell.building-mode .tech-row strong {
+.operations-shell.building-mode .tech-row strong,
+.operations-shell.building-mode .incident-row strong,
+.operations-shell.building-mode .incident-detail strong,
+.operations-shell.building-mode .work-order-row strong,
+.operations-shell.building-mode .work-order-detail strong {
   color: #ffffff;
   text-shadow: 0 1px 14px rgba(15, 23, 42, 0.36);
 }

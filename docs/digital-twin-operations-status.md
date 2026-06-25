@@ -490,3 +490,29 @@ node scripts/add_equipment_to_marriott_ifc.mjs
 ```
 
 Sau đó reload viewer.
+## Bổ Sung Mới: Data Quality, Incident Workflow, Work Order
+
+| Hạng mục | Trạng thái | Ghi chú |
+| --- | --- | --- |
+| Data Quality Panel | Done mức MVP | Hiển thị tổng asset, mapping IFC, device id, mqtt topic, position, building id, telemetry template |
+| Quality Status Per Asset | Done mức MVP | `Ready`, `Missing IFC Link`, `Missing Device Link`, `Missing Position`, `Missing Building`, `Incomplete` |
+| Filter Data Issues | Done mức MVP | Lọc asset có data issue, thiếu IFC mapping, thiếu telemetry mapping, thiếu position |
+| Mapping Detail | Done mức MVP | Hiển thị check `source_global_id`, IFC object, device id, telemetry, position, building id |
+| Incident Workflow | Done mức MVP runtime | Alert tự sinh incident `New`; hỗ trợ acknowledge, assign, in progress, resolve, close |
+| Incident mock seed | Done | Thêm `mock-db/operations-incidents.json` và endpoint `/api/operations/incidents` |
+| Work Order Lifecycle | Done mức MVP runtime | Tạo work order từ incident, assign technician, đổi trạng thái, chọn WO để locate asset |
+| Repair Time Estimator | Done mức MVP rule-based | Ước tính ETA sửa chữa từ asset type, severity, status, distance, availability, specialty, criticality |
+| Resolve Flow | Done mức MVP | Work order `Resolved` sẽ chuyển incident liên quan sang `Resolved` |
+| UI Organization | Done mức MVP | Left rail chứa search/filter/asset/data quality; right panel chứa context, alert, incident, work order |
+
+Luồng demo mới:
+
+```text
+Asset Registry
+-> Data Quality
+-> Telemetry / Alert
+-> Incident
+-> Work Order
+-> Technician Dispatch
+-> Resolve
+```

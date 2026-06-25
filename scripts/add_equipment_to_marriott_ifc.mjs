@@ -302,7 +302,7 @@ const devices = [
     model: "DV-DOME-4K",
     status: "Online",
     system: "cctv",
-    x: 5200,
+    x: 9800,
     y: 3600,
     z: 3100,
     parts: () => [

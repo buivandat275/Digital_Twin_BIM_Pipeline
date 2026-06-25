@@ -35,6 +35,10 @@ const STATUS_COLORS = {
 };
 const STATUS_SEQUENCE = ["Normal", "Normal", "Warning", "Normal", "Fault", "Normal", "Offline", "Normal"];
 const USER_POSITION = { x: 4400, y: 3300, z: 0, unit: "mm" };
+const INDOOR_CORRIDOR_Y_BY_FLOOR = {
+  "Level 9": 3600,
+  "Level 10": 7300,
+};
 const PICK_DRAG_THRESHOLD_PX = 6;
 const SCENARIOS = [
   {
@@ -167,6 +171,29 @@ function preferredIfcFile(files) {
   return files.find((file) => file.name === PREFERRED_IFC) || files[0] || null;
 }
 
+function routeFromLocation(location = window.location) {
+  const path = location.pathname.replace(/\/+$/, "") || "/campus";
+  const buildingMatch = path.match(/^\/building\/([^/]+)$/);
+  if (buildingMatch) return { mode: "building", buildingId: decodeURIComponent(buildingMatch[1]) };
+  return { mode: "site", buildingId: "" };
+}
+
+function routePathForCampus() {
+  return "/campus";
+}
+
+function routePathForBuilding(building) {
+  return `/building/${encodeURIComponent(building.building_id)}`;
+}
+
+function replaceRoute(path) {
+  if (window.location.pathname !== path) window.history.replaceState({}, "", path);
+}
+
+function pushRoute(path) {
+  if (window.location.pathname !== path) window.history.pushState({}, "", path);
+}
+
 function assetBuildingId(asset) {
   return asset?.building_id || "MARRIOTT_EQUIPMENT";
 }
@@ -219,6 +246,168 @@ function distanceSiteMeters(a, b) {
   const dx = (a.x || 0) - (b.x || 0);
   const dy = (a.y || 0) - (b.y || 0);
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+function closestPointOnSegment(point, start, end) {
+  const dx = (end.x || 0) - (start.x || 0);
+  const dy = (end.y || 0) - (start.y || 0);
+  const lengthSq = dx * dx + dy * dy;
+  if (!lengthSq) return { x: start.x || 0, y: start.y || 0 };
+  const t = Math.max(0, Math.min(1, (((point.x || 0) - (start.x || 0)) * dx + ((point.y || 0) - (start.y || 0)) * dy) / lengthSq));
+  return { x: (start.x || 0) + t * dx, y: (start.y || 0) + t * dy };
+}
+
+function closestRoadPoint(siteLayout, point) {
+  let best = null;
+  (siteLayout?.roads || []).forEach((road) => {
+    const centerline = road.centerline || [];
+    for (let index = 0; index < centerline.length - 1; index++) {
+      const projected = closestPointOnSegment(point, centerline[index], centerline[index + 1]);
+      const distance = distanceSiteMeters(point, projected);
+      if (!best || distance < best.distance) best = { ...projected, distance, road_id: road.road_id };
+    }
+  });
+  return best;
+}
+
+function pointKey(point) {
+  return `${Number(point.x || 0).toFixed(3)},${Number(point.y || 0).toFixed(3)}`;
+}
+
+function isPointOnSegment(point, start, end) {
+  const minX = Math.min(start.x, end.x) - 0.001;
+  const maxX = Math.max(start.x, end.x) + 0.001;
+  const minY = Math.min(start.y, end.y) - 0.001;
+  const maxY = Math.max(start.y, end.y) + 0.001;
+  const cross = ((point.y || 0) - (start.y || 0)) * ((end.x || 0) - (start.x || 0)) -
+    ((point.x || 0) - (start.x || 0)) * ((end.y || 0) - (start.y || 0));
+  return Math.abs(cross) < 0.01 && point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY;
+}
+
+function segmentIntersection(a1, a2, b1, b2) {
+  const adx = (a2.x || 0) - (a1.x || 0);
+  const ady = (a2.y || 0) - (a1.y || 0);
+  const bdx = (b2.x || 0) - (b1.x || 0);
+  const bdy = (b2.y || 0) - (b1.y || 0);
+  const denominator = adx * bdy - ady * bdx;
+  if (Math.abs(denominator) < 0.0001) return null;
+  const dx = (b1.x || 0) - (a1.x || 0);
+  const dy = (b1.y || 0) - (a1.y || 0);
+  const t = (dx * bdy - dy * bdx) / denominator;
+  const u = (dx * ady - dy * adx) / denominator;
+  if (t < -0.001 || t > 1.001 || u < -0.001 || u > 1.001) return null;
+  return { x: (a1.x || 0) + t * adx, y: (a1.y || 0) + t * ady };
+}
+
+function roadGraphPath(siteLayout, startPoint, endPoint) {
+  const segments = [];
+  (siteLayout?.roads || []).forEach((road) => {
+    const centerline = road.centerline || [];
+    for (let index = 0; index < centerline.length - 1; index++) {
+      segments.push({ road_id: road.road_id, start: centerline[index], end: centerline[index + 1], points: [] });
+    }
+  });
+  if (!segments.length) return [];
+
+  segments.forEach((segment) => {
+    segment.points.push(segment.start, segment.end);
+    if (isPointOnSegment(startPoint, segment.start, segment.end)) segment.points.push(startPoint);
+    if (isPointOnSegment(endPoint, segment.start, segment.end)) segment.points.push(endPoint);
+  });
+
+  for (let i = 0; i < segments.length; i++) {
+    for (let j = i + 1; j < segments.length; j++) {
+      const intersection = segmentIntersection(segments[i].start, segments[i].end, segments[j].start, segments[j].end);
+      if (!intersection) continue;
+      segments[i].points.push(intersection);
+      segments[j].points.push(intersection);
+    }
+  }
+
+  const nodes = new Map();
+  const edges = new Map();
+  const addNode = (point) => {
+    const key = pointKey(point);
+    if (!nodes.has(key)) nodes.set(key, { x: point.x, y: point.y });
+    if (!edges.has(key)) edges.set(key, []);
+    return key;
+  };
+  const addEdge = (a, b) => {
+    const aKey = addNode(a);
+    const bKey = addNode(b);
+    const distance = distanceSiteMeters(a, b);
+    if (distance < 0.001) return;
+    edges.get(aKey).push({ key: bKey, distance });
+    edges.get(bKey).push({ key: aKey, distance });
+  };
+
+  segments.forEach((segment) => {
+    const unique = Array.from(new Map(segment.points.map((point) => [pointKey(point), point])).values());
+    unique
+      .sort((a, b) => distanceSiteMeters(segment.start, a) - distanceSiteMeters(segment.start, b))
+      .forEach((point, index, all) => {
+        if (index > 0) addEdge(all[index - 1], point);
+      });
+  });
+
+  const startKey = addNode(startPoint);
+  const endKey = addNode(endPoint);
+  const distances = new Map(Array.from(nodes.keys()).map((key) => [key, Infinity]));
+  const previous = new Map();
+  const pending = new Set(nodes.keys());
+  distances.set(startKey, 0);
+
+  while (pending.size) {
+    let currentKey = null;
+    let currentDistance = Infinity;
+    pending.forEach((key) => {
+      const distance = distances.get(key);
+      if (distance < currentDistance) {
+        currentDistance = distance;
+        currentKey = key;
+      }
+    });
+    if (!currentKey || currentKey === endKey) break;
+    pending.delete(currentKey);
+    (edges.get(currentKey) || []).forEach((edge) => {
+      if (!pending.has(edge.key)) return;
+      const nextDistance = currentDistance + edge.distance;
+      if (nextDistance < distances.get(edge.key)) {
+        distances.set(edge.key, nextDistance);
+        previous.set(edge.key, currentKey);
+      }
+    });
+  }
+
+  if (!previous.has(endKey) && startKey !== endKey) return [];
+  const path = [];
+  let cursor = endKey;
+  while (cursor) {
+    path.unshift(nodes.get(cursor));
+    if (cursor === startKey) break;
+    cursor = previous.get(cursor);
+  }
+  return path;
+}
+
+function compactRoutePoints(points) {
+  return points.filter((point, index, all) => {
+    if (!point) return false;
+    const previous = all[index - 1];
+    return !previous || distanceSiteMeters(previous, point) > 0.6;
+  });
+}
+
+function campusRouteForTechnician(tech, building, siteLayout) {
+  const start = technicianSitePosition(tech);
+  const entry = building?.entry_position || building?.position;
+  const target = building?.position;
+  if (!start || !entry || !target) return [];
+  const startRoad = closestRoadPoint(siteLayout, start);
+  const targetRoad = closestRoadPoint(siteLayout, entry);
+  if (!startRoad || !targetRoad) return compactRoutePoints([start, target]);
+  const roadPath = roadGraphPath(siteLayout, startRoad, targetRoad);
+  return compactRoutePoints([start, ...(roadPath.length ? roadPath : [startRoad, targetRoad]), entry, target]);
 }
 
 function statusTone(status) {
@@ -410,17 +599,198 @@ function buildAlerts(assets) {
     }));
 }
 
+function incidentKeyForAlert(alert) {
+  return `${alert.asset_id}:${alert.status}`;
+}
+
+function makeIncidentFromAlert(alert, index = 0) {
+  const now = new Date().toISOString();
+  return {
+    incident_id: `INC-${alert.asset_id}-${alert.status}`.replace(/[^A-Z0-9-]/gi, "-").toUpperCase(),
+    incident_key: incidentKeyForAlert(alert),
+    alert_id: alert.alert_id,
+    asset_id: alert.asset_id,
+    building_id: assetBuildingId(alert.asset),
+    title: alert.message,
+    severity: alert.severity,
+    status: "New",
+    created_at: now,
+    updated_at: now,
+    assigned_technician_id: "",
+    work_order_id: "",
+    sort_index: index,
+  };
+}
+
+const REPAIR_BASE_MINUTES = {
+  Camera: { Warning: 20, Fault: 45, Offline: 35 },
+  Light: { Warning: 15, Fault: 40, Offline: 30 },
+  Sensor: { Warning: 20, Fault: 35, Offline: 25 },
+  "Extract Fan": { Warning: 45, Fault: 90, Offline: 65 },
+  AHU: { Warning: 60, Fault: 120, Offline: 80 },
+  "Electric Meter": { Warning: 40, Fault: 95, Offline: 70 },
+  Pump: { Warning: 45, Fault: 85, Offline: 65 },
+};
+
+function roundToNearestFive(value) {
+  return Math.max(5, Math.ceil(value / 5) * 5);
+}
+
+function formatDuration(minutes = 0) {
+  const total = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(total / 60);
+  const mins = total % 60;
+  if (!hours) return `${mins} min`;
+  if (!mins) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+}
+
+function repairStatusFor(incident, asset) {
+  const fromKey = String(incident?.incident_key || "").split(":")[1];
+  return fromKey || asset?.status || "Fault";
+}
+
+function estimateRepairTime({ incident, asset, technician }) {
+  if (!incident || !asset) return null;
+  const status = repairStatusFor(incident, asset);
+  const baseByStatus = REPAIR_BASE_MINUTES[asset.asset_type] || { Warning: 30, Fault: 70, Offline: 50 };
+  const fixMinutes = baseByStatus[status] || baseByStatus.Fault || 60;
+  const diagnosisMinutes = incident.severity === "High" ? 18 : incident.severity === "Medium" ? 12 : 8;
+  const criticalityMinutes = asset.criticality === "High" ? 10 : asset.criticality === "Medium" ? 5 : 0;
+  const skillPenalty = technician?.specialties?.includes(asset.specialty) ? 0 : 30;
+  const availabilityPenalty = technician?.availability === "Busy" ? 25 : 0;
+  const distance = Number.isFinite(technician?.distance)
+    ? technician.distance
+    : distanceFromPointMeters(technician?.position, asset);
+  const travelMinutes = Number.isFinite(distance) ? roundToNearestFive(Math.max(4, distance / 70 + 4)) : 10;
+  const totalMinutes = roundToNearestFive(
+    travelMinutes + diagnosisMinutes + fixMinutes + criticalityMinutes + skillPenalty + availabilityPenalty,
+  );
+  const slaMinutes = incident.severity === "High" ? 120 : incident.severity === "Medium" ? 240 : 480;
+  const confidence =
+    asset.source_global_id && asset.device_id && asset.position && technician
+      ? "High"
+      : asset.position && technician
+        ? "Medium"
+        : "Low";
+  return {
+    status,
+    totalMinutes,
+    travelMinutes,
+    diagnosisMinutes,
+    fixMinutes,
+    criticalityMinutes,
+    skillPenalty,
+    availabilityPenalty,
+    slaMinutes,
+    confidence,
+  };
+}
+
+function makeWorkOrder({ incident, asset, technician, existingCount = 0 }) {
+  const now = new Date();
+  const estimate = estimateRepairTime({ incident, asset, technician });
+  const due = new Date(now.getTime() + (estimate?.totalMinutes || 120) * 60 * 1000);
+  const priority = incident.severity === "High" ? "High" : incident.severity === "Medium" ? "Medium" : "Low";
+  return {
+    work_order_id: `WO-${String(existingCount + 1).padStart(4, "0")}`,
+    incident_id: incident.incident_id,
+    asset_id: incident.asset_id,
+    building_id: incident.building_id,
+    technician_id: technician.technician_id,
+    priority,
+    status: "Assigned",
+    task: `Inspect ${asset?.asset_name || incident.asset_id} and restore normal operation`,
+    created_at: now.toISOString(),
+    due_at: due.toISOString(),
+    estimated_repair_minutes: estimate?.totalMinutes || 120,
+    estimated_travel_minutes: estimate?.travelMinutes || 10,
+    estimated_fix_minutes: estimate?.fixMinutes || 60,
+    repair_confidence: estimate?.confidence || "Low",
+    repair_estimate_breakdown: estimate || null,
+  };
+}
+
+function qualityChecksForAsset(asset) {
+  return {
+    hasIfcLink: Boolean(asset?.source_global_id),
+    ifcObjectFound: Boolean(asset?.source_global_id) && !asset?.runtime_only,
+    hasDeviceId: Boolean(asset?.device_id),
+    hasMqttTopic: Boolean(asset?.mqtt_topic),
+    hasTelemetry: Boolean(asset?.telemetry || asset?.telemetry_template),
+    hasPosition: Boolean(asset?.position && Number.isFinite(Number(asset.position.x)) && Number.isFinite(Number(asset.position.y))),
+    hasBuildingId: Boolean(asset?.building_id),
+    hasTelemetryTemplate: Boolean(asset?.telemetry_template),
+  };
+}
+
+function qualityIssuesForAsset(asset) {
+  const checks = qualityChecksForAsset(asset);
+  const issues = [];
+  if (!checks.hasIfcLink || !checks.ifcObjectFound) issues.push("Missing IFC Link");
+  if (!checks.hasDeviceId || !checks.hasMqttTopic || !checks.hasTelemetry) issues.push("Missing Device Link");
+  if (!checks.hasPosition) issues.push("Missing Position");
+  if (!checks.hasBuildingId) issues.push("Missing Building");
+  return issues;
+}
+
+function qualityStatusForAsset(asset) {
+  const issues = qualityIssuesForAsset(asset);
+  if (!issues.length) return "Ready";
+  if (issues.length === 1) return issues[0];
+  return "Incomplete";
+}
+
+function buildDataQualitySummary(assets) {
+  const summary = {
+    total: assets.length,
+    mappedToIfc: 0,
+    missingIfc: 0,
+    withDeviceId: 0,
+    withMqttTopic: 0,
+    withPosition: 0,
+    withBuildingId: 0,
+    withTelemetryTemplate: 0,
+    ready: 0,
+    withIssues: 0,
+  };
+  assets.forEach((asset) => {
+    const checks = qualityChecksForAsset(asset);
+    if (checks.hasIfcLink && checks.ifcObjectFound) summary.mappedToIfc += 1;
+    if (!checks.hasIfcLink) summary.missingIfc += 1;
+    if (checks.hasDeviceId) summary.withDeviceId += 1;
+    if (checks.hasMqttTopic) summary.withMqttTopic += 1;
+    if (checks.hasPosition) summary.withPosition += 1;
+    if (checks.hasBuildingId) summary.withBuildingId += 1;
+    if (checks.hasTelemetryTemplate) summary.withTelemetryTemplate += 1;
+    if (qualityStatusForAsset(asset) === "Ready") summary.ready += 1;
+    else summary.withIssues += 1;
+  });
+  return summary;
+}
+
 function routeForAsset(asset) {
   if (!asset?.position) return [];
   const target = asset.position;
   const floorElevationM = asset.floor_elevation_m ?? 36;
+  const corridorY = INDOOR_CORRIDOR_Y_BY_FLOOR[asset.floor] || target.y || USER_POSITION.y;
   const start = { ...USER_POSITION, floorElevationM };
   return [
     start,
-    { x: USER_POSITION.x, y: target.y, z: 0, unit: "mm", floorElevationM },
-    { x: target.x, y: target.y, z: 0, unit: "mm", floorElevationM },
+    { x: USER_POSITION.x, y: corridorY, z: 0, unit: "mm", floorElevationM },
+    { x: target.x, y: corridorY, z: 0, unit: "mm", floorElevationM },
     { ...target, floorElevationM },
-  ];
+  ].filter((point, index, all) => {
+    const previous = all[index - 1];
+    if (!previous) return true;
+    return (
+      Math.hypot(
+        (point.x || 0) - (previous.x || 0),
+        (point.y || 0) - (previous.y || 0),
+        (point.z || 0) - (previous.z || 0),
+      ) > 120
+    );
+  });
 }
 
 function scoreTechnicians(technicians, asset) {
@@ -488,9 +858,14 @@ function App() {
   const [viewMode, setViewMode] = useState("site");
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [floorplan, setFloorplan] = useState(null);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
   const [selectedFileKey, setSelectedFileKey] = useState("");
   const [selectedObject, setSelectedObject] = useState(null);
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const [incidents, setIncidents] = useState([]);
+  const [selectedIncidentId, setSelectedIncidentId] = useState("");
+  const [workOrders, setWorkOrders] = useState([]);
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState("");
   const [telemetryByDevice, setTelemetryByDevice] = useState({});
   const [simulatorRunning, setSimulatorRunning] = useState(true);
   const [activeScenarioId, setActiveScenarioId] = useState("baseline");
@@ -510,11 +885,12 @@ function App() {
     status: "",
     specialty: "",
     problemOnly: false,
+    dataIssue: "",
   });
   const [naturalQuery, setNaturalQuery] = useState("");
   const [naturalResult, setNaturalResult] = useState(null);
   const [naturalLoading, setNaturalLoading] = useState(false);
-  const [radius, setRadius] = useState(5);
+  const [radius, setRadius] = useState(8);
   const [spatialKind, setSpatialKind] = useState("Any");
   const viewerRef = useRef(null);
 
@@ -540,10 +916,28 @@ function App() {
     if (viewMode !== "building" || !activeBuildingAssetSourceId) return assets;
     return assets.filter((asset) => assetBuildingId(asset) === activeBuildingAssetSourceId);
   }, [activeBuildingAssetSourceId, assets, viewMode]);
+  const activeAssetIds = useMemo(() => new Set(activeAssets.map((asset) => asset.asset_id)), [activeAssets]);
   const alerts = useMemo(() => buildAlerts(activeAssets), [activeAssets]);
+  const selectedIncident = useMemo(
+    () => incidents.find((incident) => incident.incident_id === selectedIncidentId) || null,
+    [incidents, selectedIncidentId],
+  );
+  const selectedWorkOrder = useMemo(
+    () => workOrders.find((workOrder) => workOrder.work_order_id === selectedWorkOrderId) || null,
+    [selectedWorkOrderId, workOrders],
+  );
+  const visibleIncidents = useMemo(
+    () => incidents.filter((incident) => activeAssetIds.has(incident.asset_id)),
+    [activeAssetIds, incidents],
+  );
+  const visibleWorkOrders = useMemo(
+    () => workOrders.filter((workOrder) => activeAssetIds.has(workOrder.asset_id)),
+    [activeAssetIds, workOrders],
+  );
   const types = useMemo(() => Array.from(new Set(activeAssets.map((asset) => asset.asset_type))).sort(), [activeAssets]);
   const floors = useMemo(() => Array.from(new Set(activeAssets.map((asset) => asset.floor))).sort(), [activeAssets]);
   const zones = useMemo(() => Array.from(new Set(activeAssets.map((asset) => asset.zone))).sort(), [activeAssets]);
+  const dataQualitySummary = useMemo(() => buildDataQualitySummary(activeAssets), [activeAssets]);
   const buildingStats = useMemo(() => {
     const stats = new Map();
     (siteLayout?.buildings || []).forEach((building) => {
@@ -574,7 +968,10 @@ function App() {
         (!filters.zone || asset.zone === filters.zone) &&
         (!filters.status || asset.status === filters.status) &&
         (!filters.specialty || asset.specialty === filters.specialty) &&
-        (!filters.problemOnly || ["Warning", "Fault", "Offline"].includes(asset.status))
+        (!filters.problemOnly || ["Warning", "Fault", "Offline"].includes(asset.status)) &&
+        (!filters.dataIssue ||
+          (filters.dataIssue === "any" && qualityStatusForAsset(asset) !== "Ready") ||
+          qualityIssuesForAsset(asset).includes(filters.dataIssue))
       );
     });
   }, [activeAssets, filters]);
@@ -600,19 +997,69 @@ function App() {
     () => scoreTechniciansForBuilding(technicians, selectedBuilding),
     [technicians, selectedBuilding],
   );
+  const selectedSiteTechnician = useMemo(
+    () =>
+      technicians.find((tech) => tech.technician_id === selectedTechnicianId) ||
+      siteDispatchCandidates[0] ||
+      null,
+    [selectedTechnicianId, siteDispatchCandidates, technicians],
+  );
+  const campusRoute = useMemo(
+    () => campusRouteForTechnician(selectedSiteTechnician, selectedBuilding, siteLayout),
+    [selectedBuilding, selectedSiteTechnician, siteLayout],
+  );
   const relationships = useMemo(
     () => buildAssetRelationships(selectedRuntimeAsset, activeAssets),
     [activeAssets, selectedRuntimeAsset],
   );
 
+  function applyRoute(route, context = {}) {
+    const layout = context.siteLayout || siteLayout;
+    const ifcFiles = context.allIfcFiles || allIfcFiles;
+    const currentAssets = context.assets || assets;
+    if (!layout?.buildings?.length) return;
+
+    if (route.mode === "building") {
+      const building =
+        layout.buildings.find((item) => item.building_id === route.buildingId) ||
+        layout.buildings.find((item) => item.building_id === decodeURIComponent(route.buildingId || ""));
+      if (!building) {
+        setViewMode("site");
+        setSelectedBuilding(layout.buildings[0]);
+        replaceRoute(routePathForCampus());
+        return;
+      }
+
+      const file = ifcFiles.find((item) => item.name === building.ifc_file);
+      setSelectedBuilding(building);
+      setViewMode("building");
+      if (file) setSelectedFileKey(file.key);
+      setSelectedObject(null);
+      const buildingAssets = buildingAssetsFor(building, currentAssets);
+      setSelectedAsset(buildingAssets[0] || null);
+      setFilters({ search: "", type: "", floor: "", zone: "", status: "", specialty: "", problemOnly: false, dataIssue: "" });
+      setViewerState({
+        status: "Idle",
+        message: file ? `Opening ${building.name}` : `IFC file not found: ${building.ifc_file}`,
+        progress: 0,
+      });
+      return;
+    }
+
+    setViewMode("site");
+    setSelectedObject(null);
+    setViewerState({ status: "Ready", message: "Campus overview", progress: 100 });
+  }
+
   useEffect(() => {
     async function bootstrap() {
-      const [fileRes, assetRes, techRes, floorplanRes, siteRes] = await Promise.all([
+      const [fileRes, assetRes, techRes, floorplanRes, siteRes, incidentRes] = await Promise.all([
         fetch("/api/files"),
         fetch("/api/operations/assets"),
         fetch("/api/operations/technicians"),
         fetch("/api/operations/floorplan"),
         fetch("/api/operations/site-layout"),
+        fetch("/api/operations/incidents"),
       ]);
       const fileData = await fileRes.json();
       const assetData = (await assetRes.json()).map((asset) => ({
@@ -622,19 +1069,25 @@ function App() {
       const techData = await techRes.json();
       const floorplanData = await floorplanRes.json();
       const siteData = await siteRes.json();
+      const incidentData = await incidentRes.json();
       setFiles(fileData);
       setOperationAssets(assetData);
       setTechnicians(techData);
+      setIncidents(incidentData);
       setSiteLayout(siteData);
       setFloorplan(floorplanData);
       setTelemetryByDevice(initialTelemetry(assetData));
 
       const preferred = preferredIfcFile(fileData.ifcFiles || []);
+      const outputIfcFiles = (fileData.ifcFiles || []).map((file) => ({ ...file, key: `output:${file.name}`, source: "output" }));
       if (preferred) setSelectedFileKey(`output:${preferred.name}`);
       if (assetData[0]) setSelectedAsset(assetData[0]);
       const defaultBuilding =
         siteData?.buildings?.find((building) => building.ifc_file === PREFERRED_IFC) || siteData?.buildings?.[0] || null;
       setSelectedBuilding(defaultBuilding);
+      const initialRoute = routeFromLocation();
+      if (window.location.pathname === "/") replaceRoute(routePathForCampus());
+      applyRoute(initialRoute, { siteLayout: siteData, allIfcFiles: outputIfcFiles, assets: assetData });
       checkLlmStatus();
     }
     bootstrap().catch((error) => {
@@ -643,9 +1096,33 @@ function App() {
   }, []);
 
   useEffect(() => {
+    function handlePopState() {
+      applyRoute(routeFromLocation());
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [siteLayout, allIfcFiles, assets]);
+
+  useEffect(() => {
     if (!operationAssets.length) return;
     setTelemetryByDevice(telemetryForScenario(operationAssets, activeScenario, tick));
   }, [activeScenario, operationAssets]);
+
+  useEffect(() => {
+    if (!alerts.length) return;
+    setIncidents((current) => {
+      const byKey = new Map(current.map((incident) => [incident.incident_key, incident]));
+      let changed = false;
+      alerts.forEach((alert, index) => {
+        const key = incidentKeyForAlert(alert);
+        if (!byKey.has(key)) {
+          byKey.set(key, makeIncidentFromAlert(alert, index));
+          changed = true;
+        }
+      });
+      return changed ? Array.from(byKey.values()).sort((a, b) => a.sort_index - b.sort_index) : current;
+    });
+  }, [alerts]);
 
   useEffect(() => {
     const floor = selectedRuntimeAsset?.floor || "Level 9";
@@ -749,6 +1226,7 @@ function App() {
 
   function openBuilding(building) {
     if (!building) return;
+    pushRoute(routePathForBuilding(building));
     const file = allIfcFiles.find((item) => item.name === building.ifc_file);
     setSelectedBuilding(building);
     setViewMode("building");
@@ -765,6 +1243,7 @@ function App() {
   }
 
   function backToSite() {
+    pushRoute(routePathForCampus());
     setViewMode("site");
     setSelectedObject(null);
     setViewerState({ status: "Ready", message: "Campus overview", progress: 100 });
@@ -820,15 +1299,16 @@ function App() {
   function applyNaturalIntent(intent) {
     const parsedFilters = intent?.filters || {};
     const spatial = intent?.spatial || {};
-    setFilters({
-      search: parsedFilters.search || "",
-      type: parsedFilters.type || "",
-      floor: parsedFilters.floor || "",
-      zone: parsedFilters.zone || "",
-      status: parsedFilters.status || "",
-      specialty: parsedFilters.specialty || "",
-      problemOnly: Boolean(parsedFilters.problemOnly),
-    });
+      setFilters({
+        search: parsedFilters.search || "",
+        type: parsedFilters.type || "",
+        floor: parsedFilters.floor || "",
+        zone: parsedFilters.zone || "",
+        status: parsedFilters.status || "",
+        specialty: parsedFilters.specialty || "",
+        problemOnly: Boolean(parsedFilters.problemOnly),
+        dataIssue: "",
+      });
 
     if (intent?.intent === "spatial_search") {
       setRadius(spatial.radius_m || 6);
@@ -850,6 +1330,74 @@ function App() {
       selectAsset(matches[0]);
     } else if (matches[0]) {
       selectAsset(matches[0], false);
+    }
+  }
+
+  function assetForIncident(incident) {
+    return assets.find((asset) => asset.asset_id === incident?.asset_id) || null;
+  }
+
+  function selectIncident(incident) {
+    if (!incident) return;
+    setSelectedIncidentId(incident.incident_id);
+    const asset = assetForIncident(incident);
+    if (asset) selectAsset(asset);
+  }
+
+  function updateIncidentStatus(incidentId, status, patch = {}) {
+    setIncidents((current) =>
+      current.map((incident) =>
+        incident.incident_id === incidentId
+          ? { ...incident, ...patch, status, updated_at: new Date().toISOString() }
+          : incident,
+      ),
+    );
+  }
+
+  function acknowledgeIncident(incident) {
+    updateIncidentStatus(incident.incident_id, "Acknowledged");
+  }
+
+  function assignIncident(incident, technicianId) {
+    updateIncidentStatus(incident.incident_id, "Assigned", { assigned_technician_id: technicianId });
+  }
+
+  function selectWorkOrder(workOrder) {
+    if (!workOrder) return;
+    setSelectedWorkOrderId(workOrder.work_order_id);
+    const incident = incidents.find((item) => item.incident_id === workOrder.incident_id);
+    if (incident) setSelectedIncidentId(incident.incident_id);
+    const asset = assets.find((item) => item.asset_id === workOrder.asset_id);
+    if (asset) selectAsset(asset);
+  }
+
+  function createWorkOrderForIncident(incident, technicianId) {
+    const asset = assetForIncident(incident);
+    const technician =
+      technicians.find((item) => item.technician_id === technicianId) ||
+      scoreTechnicians(technicians, asset)[0];
+    if (!incident || !asset || !technician) return;
+    const existing = workOrders.find((workOrder) => workOrder.incident_id === incident.incident_id);
+    if (existing) {
+      selectWorkOrder(existing);
+      return;
+    }
+    const workOrder = makeWorkOrder({ incident, asset, technician, existingCount: workOrders.length });
+    setWorkOrders((current) => [...current, workOrder]);
+    setSelectedWorkOrderId(workOrder.work_order_id);
+    updateIncidentStatus(incident.incident_id, "Assigned", {
+      assigned_technician_id: technician.technician_id,
+      work_order_id: workOrder.work_order_id,
+    });
+  }
+
+  function updateWorkOrderStatus(workOrderId, status) {
+    const linkedIncidentId = workOrders.find((workOrder) => workOrder.work_order_id === workOrderId)?.incident_id || "";
+    setWorkOrders((current) =>
+      current.map((workOrder) => (workOrder.work_order_id === workOrderId ? { ...workOrder, status } : workOrder)),
+    );
+    if (status === "Resolved" && linkedIncidentId) {
+      updateIncidentStatus(linkedIncidentId, "Resolved");
     }
   }
 
@@ -943,6 +1491,7 @@ function App() {
             types={types}
             floors={floors}
             zones={zones}
+            dataQualitySummary={dataQualitySummary}
             naturalQuery={naturalQuery}
             setNaturalQuery={setNaturalQuery}
             naturalResult={naturalResult}
@@ -967,6 +1516,8 @@ function App() {
             onAdd={handleAddAsset}
           />
 
+          <DataQualityPanel summary={dataQualitySummary} />
+
           <div className="asset-list">
             {filteredAssets.map((asset) => (
               <AssetRow
@@ -985,8 +1536,11 @@ function App() {
               siteLayout={siteLayout}
               buildingStats={buildingStats}
               technicians={technicians}
+              selectedTechnician={selectedSiteTechnician}
               selectedBuilding={selectedBuilding}
+              route={campusRoute}
               onSelectBuilding={setSelectedBuilding}
+              onSelectTechnician={(tech) => setSelectedTechnicianId(tech.technician_id)}
               onOpenBuilding={openBuilding}
             />
           ) : (
@@ -1051,13 +1605,19 @@ function App() {
               <CampusSiteMap
                 siteLayout={siteLayout}
                 technicians={technicians}
+                selectedTechnician={selectedSiteTechnician}
                 selectedBuilding={selectedBuilding}
+                buildingStats={buildingStats}
+                route={campusRoute}
                 onSelectBuilding={setSelectedBuilding}
+                onSelectTechnician={(tech) => setSelectedTechnicianId(tech.technician_id)}
               />
               <DispatchPanel
                 asset={{ specialty: "Nearest campus response" }}
                 candidates={siteDispatchCandidates}
                 targetLabel={`Nearest technicians to ${selectedBuilding.name}`}
+                selectedTechnicianId={selectedSiteTechnician?.technician_id}
+                onSelectTechnician={(tech) => setSelectedTechnicianId(tech.technician_id)}
               />
             </>
           )}
@@ -1073,6 +1633,7 @@ function App() {
               </section>
 
               <TelemetryCard asset={selectedRuntimeAsset} />
+              <MappingDetailPanel asset={selectedRuntimeAsset} />
               <AssetMap
                 assets={activeAssets}
                 floorplan={floorplan}
@@ -1095,6 +1656,33 @@ function App() {
           )}
 
           {viewMode === "building" && <AlertPanel alerts={alerts} onSelect={(asset) => selectAsset(asset)} />}
+
+          {viewMode === "building" && (
+            <IncidentPanel
+              incidents={visibleIncidents}
+              selectedIncident={visibleIncidents.find((incident) => incident.incident_id === selectedIncident?.incident_id) || null}
+              assets={assets}
+              technicians={technicians}
+              workOrders={visibleWorkOrders}
+              onSelect={selectIncident}
+              onAcknowledge={acknowledgeIncident}
+              onAssign={assignIncident}
+              onCreateWorkOrder={createWorkOrderForIncident}
+              onStatus={updateIncidentStatus}
+            />
+          )}
+
+          {viewMode === "building" && (
+            <WorkOrderPanel
+              workOrders={visibleWorkOrders}
+              selectedWorkOrder={visibleWorkOrders.find((workOrder) => workOrder.work_order_id === selectedWorkOrder?.work_order_id) || null}
+              incidents={incidents}
+              assets={assets}
+              technicians={technicians}
+              onSelect={selectWorkOrder}
+              onStatus={updateWorkOrderStatus}
+            />
+          )}
 
           {viewMode === "building" && (
             <dl className="property-grid">
@@ -1130,6 +1718,7 @@ function FilterPanel({
   types,
   floors,
   zones,
+  dataQualitySummary,
   naturalQuery,
   setNaturalQuery,
   naturalResult,
@@ -1160,7 +1749,7 @@ function FilterPanel({
           <button
             onClick={() => {
               setNaturalQuery("");
-              setFilters({ search: "", type: "", floor: "", zone: "", status: "", specialty: "", problemOnly: false });
+              setFilters({ search: "", type: "", floor: "", zone: "", status: "", specialty: "", problemOnly: false, dataIssue: "" });
             }}
           >
             Reset
@@ -1200,7 +1789,56 @@ function FilterPanel({
           onChange={(value) => update("status", value)}
         />
       </div>
-      {filters.problemOnly && <span className="active-chip">Showing abnormal assets</span>}
+      <div className="quality-filter-row">
+        <label>
+          Data issue
+          <select value={filters.dataIssue} onChange={(event) => update("dataIssue", event.target.value)}>
+            <option value="">All quality states</option>
+            <option value="any">Show only assets with data issues</option>
+            <option value="Missing IFC Link">Show missing IFC mapping</option>
+            <option value="Missing Device Link">Show missing telemetry mapping</option>
+            <option value="Missing Position">Show missing position</option>
+          </select>
+        </label>
+      </div>
+      <div className="active-chip-row">
+        {filters.problemOnly && <span className="active-chip">Showing abnormal assets</span>}
+        {filters.dataIssue && <span className="active-chip">{filters.dataIssue === "any" ? "Showing data issues" : filters.dataIssue}</span>}
+        <span className="active-chip muted">{dataQualitySummary.ready}/{dataQualitySummary.total} ready</span>
+      </div>
+    </section>
+  );
+}
+
+function DataQualityPanel({ summary }) {
+  const readiness = summary.total ? Math.round((summary.ready / summary.total) * 100) : 0;
+  const rows = [
+    ["Total assets", summary.total],
+    ["Assets mapped to IFC GlobalId", summary.mappedToIfc],
+    ["Assets missing source_global_id", summary.missingIfc],
+    ["Assets with device_id", summary.withDeviceId],
+    ["Assets with mqtt_topic", summary.withMqttTopic],
+    ["Assets with position", summary.withPosition],
+    ["Assets with building_id", summary.withBuildingId],
+    ["Assets with telemetry template", summary.withTelemetryTemplate],
+  ];
+  return (
+    <section className="ops-card data-quality-panel">
+      <div className="card-title-row">
+        <h3>Data Quality</h3>
+        <span className={`quality-score ${readiness >= 80 ? "ready" : readiness >= 50 ? "warning" : "fault"}`}>{readiness}%</span>
+      </div>
+      <div className="quality-meter">
+        <span style={{ width: `${readiness}%` }} />
+      </div>
+      <div className="quality-grid">
+        {rows.map(([label, value]) => (
+          <React.Fragment key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </React.Fragment>
+        ))}
+      </div>
     </section>
   );
 }
@@ -1342,6 +1980,7 @@ function SelectFilter({ label, value, values, onChange }) {
 }
 
 function AssetRow({ asset, active, onClick }) {
+  const qualityStatus = qualityStatusForAsset(asset);
   return (
     <button className={`asset-row ${active ? "active" : ""}`} onClick={onClick}>
       <span className="asset-row-head">
@@ -1353,6 +1992,7 @@ function AssetRow({ asset, active, onClick }) {
       <span className="muted-line">
         {asset.asset_id} · {asset.device_id}
       </span>
+      <span className={`quality-badge ${qualityStatus === "Ready" ? "ready" : "issue"}`}>{qualityStatus}</span>
     </button>
   );
 }
@@ -1398,6 +2038,34 @@ function TelemetryCard({ asset }) {
   );
 }
 
+function QualityCheckRow({ label, ok }) {
+  return (
+    <div className={`quality-check-row ${ok ? "ok" : "missing"}`}>
+      <span>{label}</span>
+      <strong>{ok ? "Yes" : "No"}</strong>
+    </div>
+  );
+}
+
+function MappingDetailPanel({ asset }) {
+  const checks = qualityChecksForAsset(asset);
+  const status = qualityStatusForAsset(asset);
+  return (
+    <section className="ops-card mapping-detail-panel">
+      <div className="card-title-row">
+        <h3>Mapping Detail</h3>
+        <span className={`quality-badge ${status === "Ready" ? "ready" : "issue"}`}>{status}</span>
+      </div>
+      <QualityCheckRow label="source_global_id exists?" ok={checks.hasIfcLink} />
+      <QualityCheckRow label="IFC object found?" ok={checks.ifcObjectFound} />
+      <QualityCheckRow label="device_id exists?" ok={checks.hasDeviceId} />
+      <QualityCheckRow label="telemetry exists?" ok={checks.hasTelemetry} />
+      <QualityCheckRow label="position exists?" ok={checks.hasPosition} />
+      <QualityCheckRow label="building_id exists?" ok={checks.hasBuildingId} />
+    </section>
+  );
+}
+
 function AlertPanel({ alerts, onSelect }) {
   return (
     <section className="ops-card">
@@ -1411,6 +2079,180 @@ function AlertPanel({ alerts, onSelect }) {
           </button>
         ))}
       </div>
+    </section>
+  );
+}
+
+function IncidentPanel({
+  incidents,
+  selectedIncident,
+  assets,
+  technicians,
+  workOrders,
+  onSelect,
+  onAcknowledge,
+  onAssign,
+  onCreateWorkOrder,
+  onStatus,
+}) {
+  const openIncidents = incidents.filter((incident) => !["Resolved", "Closed"].includes(incident.status));
+  const detail = selectedIncident || openIncidents[0] || null;
+  const asset = assets.find((item) => item.asset_id === detail?.asset_id);
+  const candidates = scoreTechnicians(technicians, asset).slice(0, 3);
+  const existingWorkOrder = workOrders.find((workOrder) => workOrder.incident_id === detail?.incident_id);
+  const assignedTechnician =
+    candidates.find((tech) => tech.technician_id === detail?.assigned_technician_id) ||
+    candidates[0] ||
+    technicians.find((tech) => tech.technician_id === detail?.assigned_technician_id);
+  const estimate =
+    existingWorkOrder?.repair_estimate_breakdown ||
+    estimateRepairTime({ incident: detail, asset, technician: assignedTechnician });
+
+  return (
+    <section className="ops-card incident-panel">
+      <div className="card-title-row">
+        <h3>Incidents</h3>
+        <span className="quality-badge issue">{openIncidents.length} open</span>
+      </div>
+      {!incidents.length && <p className="empty-state">No incidents created from active alerts.</p>}
+      <div className="incident-list">
+        {incidents.map((incident) => (
+          <button
+            className={`incident-row ${incident.incident_id === detail?.incident_id ? "active" : ""}`}
+            key={incident.incident_id}
+            onClick={() => onSelect(incident)}
+            type="button"
+          >
+            <strong>{incident.severity}</strong>
+            <span>{incident.title}</span>
+            <em>{incident.status} / {new Date(incident.created_at).toLocaleTimeString()}</em>
+          </button>
+        ))}
+      </div>
+      {detail && (
+        <div className="incident-detail">
+          <strong>{detail.incident_id}</strong>
+          <span>{asset?.asset_name || detail.asset_id}</span>
+          <span>Building: {detail.building_id}</span>
+          <span>Status: {detail.status}</span>
+          {estimate && (
+            <div className="estimate-card">
+              <strong>Estimated repair time: {formatDuration(estimate.totalMinutes)}</strong>
+              <span>
+                Travel {formatDuration(estimate.travelMinutes)} / Diagnose {formatDuration(estimate.diagnosisMinutes)} / Fix{" "}
+                {formatDuration(estimate.fixMinutes)}
+              </span>
+              <span>
+                SLA {formatDuration(estimate.slaMinutes)} / Confidence {estimate.confidence}
+              </span>
+              {(estimate.skillPenalty > 0 || estimate.availabilityPenalty > 0) && (
+                <span>
+                  Penalty: skill {formatDuration(estimate.skillPenalty)} / availability{" "}
+                  {formatDuration(estimate.availabilityPenalty)}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="incident-actions">
+            <button type="button" onClick={() => onAcknowledge(detail)} disabled={detail.status !== "New"}>
+              Acknowledge
+            </button>
+            <button
+              type="button"
+              onClick={() => candidates[0] && onAssign(detail, candidates[0].technician_id)}
+              disabled={!candidates[0] || ["Assigned", "In Progress", "Resolved", "Closed"].includes(detail.status)}
+            >
+              Assign Technician
+            </button>
+            <button
+              type="button"
+              onClick={() => onCreateWorkOrder(detail, detail.assigned_technician_id || candidates[0]?.technician_id)}
+              disabled={!candidates[0] || Boolean(existingWorkOrder)}
+            >
+              {existingWorkOrder ? existingWorkOrder.work_order_id : "Create Work Order"}
+            </button>
+            <button type="button" onClick={() => onStatus(detail.incident_id, "In Progress")} disabled={["Resolved", "Closed"].includes(detail.status)}>
+              Mark In Progress
+            </button>
+            <button type="button" onClick={() => onStatus(detail.incident_id, "Resolved")} disabled={["Resolved", "Closed"].includes(detail.status)}>
+              Resolve
+            </button>
+            <button type="button" onClick={() => onStatus(detail.incident_id, "Closed")} disabled={detail.status !== "Resolved"}>
+              Close
+            </button>
+          </div>
+          {!!candidates.length && (
+            <p className="hint-text">
+              Recommended: {assignedTechnician?.name || candidates[0].name} /{" "}
+              {(assignedTechnician?.distance ?? candidates[0].distance).toFixed(1)} m /{" "}
+              {assignedTechnician?.availability || candidates[0].availability}
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function WorkOrderPanel({ workOrders, selectedWorkOrder, incidents, assets, technicians, onSelect, onStatus }) {
+  const detail = selectedWorkOrder || workOrders[0] || null;
+  const asset = assets.find((item) => item.asset_id === detail?.asset_id);
+  const technician = technicians.find((item) => item.technician_id === detail?.technician_id);
+  const incident = incidents.find((item) => item.incident_id === detail?.incident_id);
+
+  return (
+    <section className="ops-card work-order-panel">
+      <div className="card-title-row">
+        <h3>Work Orders</h3>
+        <span className="quality-badge ready">{workOrders.length} total</span>
+      </div>
+      {!workOrders.length && <p className="empty-state">No work orders yet. Create one from an incident.</p>}
+      <div className="work-order-list">
+        {workOrders.map((workOrder) => (
+          <button
+            type="button"
+            className={`work-order-row ${workOrder.work_order_id === detail?.work_order_id ? "active" : ""}`}
+            key={workOrder.work_order_id}
+            onClick={() => onSelect(workOrder)}
+          >
+            <strong>{workOrder.work_order_id}</strong>
+            <span>
+              {workOrder.priority} / {workOrder.status} / ETA {formatDuration(workOrder.estimated_repair_minutes || 120)}
+            </span>
+            <em>Target completion {new Date(workOrder.due_at).toLocaleTimeString()}</em>
+          </button>
+        ))}
+      </div>
+      {detail && (
+        <div className="work-order-detail">
+          <strong>{detail.task}</strong>
+          <span>Incident: {incident?.incident_id || detail.incident_id}</span>
+          <span>Asset: {asset?.asset_name || detail.asset_id}</span>
+          <span>Technician: {technician?.name || detail.technician_id}</span>
+          <span>Building/Floor: {detail.building_id} / {asset?.floor || "n/a"}</span>
+          <div className="estimate-card">
+            <strong>Estimated repair time: {formatDuration(detail.estimated_repair_minutes || 120)}</strong>
+            <span>
+              Travel {formatDuration(detail.estimated_travel_minutes || 10)} / Fix{" "}
+              {formatDuration(detail.estimated_fix_minutes || 60)}
+            </span>
+            {detail.repair_estimate_breakdown && (
+              <span>
+                Diagnose {formatDuration(detail.repair_estimate_breakdown.diagnosisMinutes)} / SLA{" "}
+                {formatDuration(detail.repair_estimate_breakdown.slaMinutes)} / Confidence{" "}
+                {detail.repair_confidence || detail.repair_estimate_breakdown.confidence}
+              </span>
+            )}
+          </div>
+          <div className="incident-actions">
+            {["Accepted", "On Site", "In Progress", "Resolved", "Cancelled"].map((status) => (
+              <button type="button" key={status} onClick={() => onStatus(detail.work_order_id, status)}>
+                {status}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -1477,14 +2319,23 @@ function SystemRelationshipPanel({ relationships, onSelect }) {
   );
 }
 
-function DispatchPanel({ asset, candidates, targetLabel }) {
+function DispatchPanel({ asset, candidates, targetLabel, selectedTechnicianId = "", onSelectTechnician }) {
   return (
     <section className="ops-card">
       <h3>Technician Dispatch</h3>
       <p className="hint-text">{targetLabel || `Required specialty: ${asset.specialty}`}</p>
       <div className="tech-list">
         {candidates.map((tech, index) => (
-          <div className="tech-row" key={tech.technician_id}>
+          <div
+            className={`tech-row ${tech.technician_id === selectedTechnicianId ? "active" : ""}`}
+            key={tech.technician_id}
+            onClick={() => onSelectTechnician?.(tech)}
+            role={onSelectTechnician ? "button" : undefined}
+            tabIndex={onSelectTechnician ? 0 : undefined}
+            onKeyDown={(event) => {
+              if (onSelectTechnician && (event.key === "Enter" || event.key === " ")) onSelectTechnician(tech);
+            }}
+          >
             <span className="rank">#{index + 1}</span>
             <div>
               <strong>{tech.name}</strong>
@@ -1517,7 +2368,16 @@ function buildingFootprint(building) {
   }));
 }
 
-function CampusSiteMap({ siteLayout, technicians, selectedBuilding, onSelectBuilding }) {
+function CampusSiteMap({
+  siteLayout,
+  technicians,
+  selectedTechnician,
+  selectedBuilding,
+  buildingStats,
+  route,
+  onSelectBuilding,
+  onSelectTechnician,
+}) {
   const width = 360;
   const height = 280;
   const bounds = siteLayout?.bounds || { minX: -120, maxX: 240, minY: -110, maxY: 180 };
@@ -1556,18 +2416,32 @@ function CampusSiteMap({ siteLayout, technicians, selectedBuilding, onSelectBuil
             <polyline key={road.road_id} points={linePoints(road.centerline)} style={{ strokeWidth: road.width_m || 8 }} />
           ))}
         </g>
+        {route?.length > 1 && (
+          <g className="site-route">
+            <polyline points={linePoints(route)} />
+          </g>
+        )}
         <g className="site-buildings">
           {(siteLayout?.buildings || []).map((building) => {
             const center = project(building.position);
             const selected = building.building_id === selectedBuilding?.building_id;
+            const stats = buildingStats.get(building.building_id) || {};
+            const hasAlert = (stats.alertCount || 0) > 0;
             return (
               <g
-                className={`site-building ${selected ? "selected" : ""}`}
+                className={`site-building ${selected ? "selected" : ""} ${hasAlert ? "has-alert" : ""}`}
                 key={building.building_id}
                 onClick={() => onSelectBuilding(building)}
               >
                 <polygon points={polygonPoints(buildingFootprint(building))} />
                 <text x={center.x} y={center.y}>{building.name}</text>
+                {hasAlert && (
+                  <g className="site-alert-badge">
+                    <circle cx={center.x + 16} cy={center.y - 16} r="9" />
+                    <text x={center.x + 16} y={center.y - 12}>!</text>
+                    <title>{stats.alertCount} active alerts</title>
+                  </g>
+                )}
                 <title>{building.name}</title>
               </g>
             );
@@ -1579,7 +2453,13 @@ function CampusSiteMap({ siteLayout, technicians, selectedBuilding, onSelectBuil
             if (!sitePosition) return null;
             const point = project(sitePosition);
             return (
-              <g className={`tech-point ${tech.availability === "Available" ? "available" : "busy"}`} key={tech.technician_id}>
+              <g
+                className={`tech-point ${tech.availability === "Available" ? "available" : "busy"} ${
+                  tech.technician_id === selectedTechnician?.technician_id ? "selected" : ""
+                }`}
+                key={tech.technician_id}
+                onClick={() => onSelectTechnician?.(tech)}
+              >
                 <circle cx={point.x} cy={point.y} r="6" />
                 <text x={point.x + 8} y={point.y - 6}>{tech.name.split(" ").slice(-1)[0]}</text>
                 <title>
@@ -1590,7 +2470,11 @@ function CampusSiteMap({ siteLayout, technicians, selectedBuilding, onSelectBuil
           })}
         </g>
       </svg>
-      <p className="hint-text">Technicians are positioned outside buildings; dispatch ranks them by distance to the selected building.</p>
+      <p className="hint-text">
+        {selectedTechnician
+          ? `Route from ${selectedTechnician.name} to ${selectedBuilding?.name || "selected building"}.`
+          : "Technicians are positioned outside buildings; dispatch ranks them by distance to the selected building."}
+      </p>
     </section>
   );
 }
@@ -1706,13 +2590,25 @@ function CampusBuildingPanel({ building, stats, onOpen }) {
   );
 }
 
-function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, onSelectBuilding, onOpenBuilding }) {
+function CampusView({
+  siteLayout,
+  buildingStats,
+  technicians,
+  selectedTechnician,
+  selectedBuilding,
+  route,
+  onSelectBuilding,
+  onSelectTechnician,
+  onOpenBuilding,
+}) {
   const containerRef = useRef(null);
   const selectedBuildingId = selectedBuilding?.building_id || "";
   const onSelectRef = useRef(onSelectBuilding);
+  const onSelectTechnicianRef = useRef(onSelectTechnician);
   const onOpenRef = useRef(onOpenBuilding);
   const sceneRef = useRef(null);
   const selectedOutlineRef = useRef(null);
+  const routeLineRef = useRef(null);
   const statsKey = useMemo(
     () =>
       JSON.stringify(
@@ -1726,8 +2622,9 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
 
   useEffect(() => {
     onSelectRef.current = onSelectBuilding;
+    onSelectTechnicianRef.current = onSelectTechnician;
     onOpenRef.current = onOpenBuilding;
-  }, [onOpenBuilding, onSelectBuilding]);
+  }, [onOpenBuilding, onSelectBuilding, onSelectTechnician]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -1755,6 +2652,33 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
     scene.add(outline);
     selectedOutlineRef.current = outline;
   }, [selectedBuilding]);
+
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    if (routeLineRef.current) {
+      scene.remove(routeLineRef.current);
+      routeLineRef.current.geometry?.dispose?.();
+      routeLineRef.current.material?.dispose?.();
+      routeLineRef.current = null;
+    }
+    if (!route || route.length < 2) return;
+    const curve = new THREE.CatmullRomCurve3(route.map((point) => new THREE.Vector3(point.x, 1.8, point.y)));
+    const geometry = new THREE.TubeGeometry(curve, Math.max(route.length * 8, 24), 0.85, 10, false);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0e7490,
+      emissiveIntensity: 0.85,
+      transparent: true,
+      opacity: 0.92,
+      depthTest: false,
+    });
+    const line = new THREE.Mesh(geometry, material);
+    line.name = "Campus technician route";
+    line.renderOrder = 45;
+    scene.add(line);
+    routeLineRef.current = line;
+  }, [route]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -1833,6 +2757,7 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
     });
 
     const buildingMeshes = [];
+    const technicianMeshes = [];
     const loader = new GLTFLoader();
     let disposed = false;
 
@@ -1864,6 +2789,51 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
       return sprite;
     }
 
+    function makeAlertSprite(stats) {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.width = 128;
+      canvas.height = 128;
+      const severe = stats.status === "Fault" || stats.status === "Offline";
+      context.beginPath();
+      context.arc(64, 64, 46, 0, Math.PI * 2);
+      context.fillStyle = severe ? "rgba(220, 38, 38, 0.96)" : "rgba(245, 158, 11, 0.96)";
+      context.fill();
+      context.lineWidth = 8;
+      context.strokeStyle = "rgba(255, 255, 255, 0.92)";
+      context.stroke();
+      context.fillStyle = "#ffffff";
+      context.font = "900 68px Arial";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText("!", 64, 68);
+      if (stats.alertCount > 1) {
+        context.beginPath();
+        context.arc(96, 32, 22, 0, Math.PI * 2);
+        context.fillStyle = "rgba(15, 23, 42, 0.92)";
+        context.fill();
+        context.fillStyle = "#ffffff";
+        context.font = "800 24px Arial";
+        context.fillText(String(stats.alertCount), 96, 33);
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(12, 12, 1);
+      sprite.renderOrder = 35;
+      return sprite;
+    }
+
+    function addBuildingAlertMarker(building, size) {
+      const stats = buildingStats.get(building.building_id) || {};
+      if (!(stats.alertCount > 0)) return;
+      const marker = makeAlertSprite(stats);
+      marker.name = `${building.building_id}_alert_marker`;
+      marker.position.set(building.position.x, (size.height || 30) + 10, building.position.y);
+      marker.userData.building = building;
+      scene.add(marker);
+    }
+
     function addTechnicianMarker(tech) {
       const sitePosition = technicianSitePosition(tech);
       if (!sitePosition) return;
@@ -1881,6 +2851,7 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
         }),
       );
       marker.castShadow = true;
+      marker.userData.technician = tech;
       const stem = new THREE.Mesh(
         new THREE.CylinderGeometry(0.45, 0.45, 4.8, 12),
         new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.5 }),
@@ -1891,6 +2862,26 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
       label.position.set(9, 8, 0);
       group.add(stem, marker, label);
       scene.add(group);
+      technicianMeshes.push(marker);
+    }
+
+    function addCampusRoute(points) {
+      if (!points || points.length < 2) return;
+      const curve = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(point.x, 1.8, point.y)));
+      const geometry = new THREE.TubeGeometry(curve, Math.max(points.length * 8, 24), 0.85, 10, false);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0e7490,
+        emissiveIntensity: 0.85,
+        transparent: true,
+        opacity: 0.92,
+        depthTest: false,
+      });
+      const line = new THREE.Mesh(geometry, material);
+      line.name = "Campus technician route";
+      line.renderOrder = 45;
+      scene.add(line);
+      routeLineRef.current = line;
     }
 
     function buildingStatusColor(building) {
@@ -1961,6 +2952,7 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
 
     (siteLayout.buildings || []).forEach((building) => {
       const size = building.size || { width: 30, depth: 24, height: 30 };
+      addBuildingAlertMarker(building, size);
 
       if (building.preview_glb) {
         loader.load(
@@ -1988,6 +2980,7 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
     });
 
     (technicians || []).forEach(addTechnicianMarker);
+    addCampusRoute(route);
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -1998,6 +2991,11 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
+      const technicianHit = raycaster.intersectObjects(technicianMeshes, false)[0];
+      if (technicianHit?.object?.userData?.technician) {
+        onSelectTechnicianRef.current?.(technicianHit.object.userData.technician);
+        return;
+      }
       const hit = raycaster.intersectObjects(buildingMeshes, false)[0];
       if (!hit?.object?.userData?.building) return;
       onSelectRef.current(hit.object.userData.building);
@@ -2061,6 +3059,7 @@ function CampusView({ siteLayout, buildingStats, technicians, selectedBuilding, 
       renderer.domElement.remove();
       if (sceneRef.current === scene) sceneRef.current = null;
       selectedOutlineRef.current = null;
+      routeLineRef.current = null;
     };
   }, [siteLayout, statsKey, technicians]);
 

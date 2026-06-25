@@ -114,6 +114,66 @@
           "y": 145
         }
       ]
+    },
+    {
+      "road_id": "R-ACCESS-NHA1",
+      "name": "Nha 1 Access Drive",
+      "width_m": 6,
+      "centerline": [
+        {
+          "x": -55,
+          "y": 60
+        },
+        {
+          "x": -20,
+          "y": 60
+        }
+      ]
+    },
+    {
+      "road_id": "R-ACCESS-NHA2",
+      "name": "Nha 2 Access Drive",
+      "width_m": 6,
+      "centerline": [
+        {
+          "x": 155,
+          "y": 68
+        },
+        {
+          "x": 142,
+          "y": 68
+        }
+      ]
+    },
+    {
+      "road_id": "R-ACCESS-MARRIOTT",
+      "name": "Marriott Equipment Access Drive",
+      "width_m": 6,
+      "centerline": [
+        {
+          "x": 55,
+          "y": -22
+        },
+        {
+          "x": 55,
+          "y": -38
+        }
+      ]
+    },
+    {
+      "road_id": "R-ACCESS-FIXED",
+      "name": "Marriott Fixed Access Drive",
+      "width_m": 6,
+      "centerline": [
+        {
+          "x": 155,
+          "y": 78
+        },
+        {
+          "x": 171,
+          "y": 78
+        }
+      ]
     }
   ],
   "buildings": [
@@ -122,9 +182,13 @@
       "name": "Nha 1",
       "ifc_file": "Nha1.ifc",
       "position": {
-        "x": -48,
-        "y": 48,
+        "x": -20,
+        "y": 60,
         "z": 0
+      },
+      "entry_position": {
+        "x": -43,
+        "y": 60
       },
       "rotation_deg": -8,
       "size": {
@@ -142,9 +206,13 @@
       "name": "Nha 2",
       "ifc_file": "Nha2.ifc",
       "position": {
-        "x": 145,
-        "y": 48,
+        "x": 122,
+        "y": 68,
         "z": 0
+      },
+      "entry_position": {
+        "x": 142,
+        "y": 68
       },
       "rotation_deg": 12,
       "size": {
@@ -163,9 +231,13 @@
       "ifc_file": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
       "asset_source_building_id": "MARRIOTT_EQUIPMENT",
       "position": {
-        "x": 48,
-        "y": -58,
+        "x": 55,
+        "y": -62,
         "z": 0
+      },
+      "entry_position": {
+        "x": 55,
+        "y": -42
       },
       "rotation_deg": 0,
       "size": {
@@ -184,9 +256,13 @@
       "ifc_file": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment_level09_level10_fixed.ifc",
       "asset_source_building_id": "MARRIOTT_EQUIPMENT",
       "position": {
-        "x": 170,
-        "y": 122,
+        "x": 205,
+        "y": 78,
         "z": 0
+      },
+      "entry_position": {
+        "x": 171,
+        "y": 78
       },
       "rotation_deg": -18,
       "size": {

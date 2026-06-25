@@ -1,214 +1,247 @@
-# High Level Design - BIM Pipeline & Digital Twin Operations Demo
+# High Level Design - Digital Twin Operations Demo
 
-## 1. Purpose
+## 1. Mục Tiêu Tài Liệu
 
-This document describes the high-level design of the current BIM Pipeline and Digital Twin Operations demo.
+Tài liệu này mô tả thiết kế mức cao của demo Digital Twin Operations hiện tại.
 
-The project has two related scopes:
+Dự án ban đầu là pipeline đọc/kiểm tra IFC. Hiện tại đã được mở rộng thành một demo vận hành Digital Twin gồm:
 
-1. **BIM Pipeline / BIM Converter**
-   - Upload/read IFC.
-   - Validate IFC compliance.
-   - Inspect IFC objects and metadata.
-   - Validate Digital Twin readiness.
-   - Clean/map/export handover data.
+- Xem nhiều tòa trong một campus.
+- Load IFC chi tiết từng tòa.
+- Quản lý asset vận hành mock.
+- Mô phỏng telemetry/cảnh báo.
+- Tìm kiếm thiết bị bằng filter và ngôn ngữ tự nhiên.
+- Định vị thiết bị trên 3D/2D.
+- Tìm thiết bị theo khoảng cách.
+- Điều phối kỹ thuật viên.
+- Hiển thị GLB preview nhẹ cho campus view.
 
-2. **Digital Twin Operations Viewer**
-   - Load IFC geometry in a browser.
-   - Display an operations asset registry.
-   - Simulate telemetry and alerts.
-   - Locate assets in 3D and 2D.
-   - Search assets using structured filters and natural language.
-   - Demonstrate spatial search, routing, dispatch, and system relationships.
+Đây vẫn là MVP/demo local, chưa kết nối MQTT thật, BMS thật, CMMS thật hay thiết bị thật.
 
-The current system is an MVP/demo. It does not connect to real MQTT, BMS, CMMS, or physical devices.
+## 2. Bài Toán Và Painpoint Đang Giải Quyết
 
-## 2. Goals
+### 2.1 BIM/IFC Khó Dùng Trong Vận Hành
 
-- Demonstrate a Digital Twin operations workflow from BIM/IFC to runtime asset operations.
-- Preserve IFC object identity through `GlobalId`.
-- Show how operational assets can be mapped to IFC objects.
-- Support search, locate, alert, route, and dispatch workflows.
-- Support natural language search through a local Ollama/Qwen intent parser.
-- Keep the solution runnable locally with mock data.
+IFC/BIM thường được tạo cho giai đoạn thiết kế/thi công. Khi chuyển sang vận hành, người dùng cần trả lời các câu hỏi khác:
 
-## 3. Non-Goals
+- Thiết bị này nằm ở đâu?
+- Thiết bị nào đang lỗi?
+- Camera nào gần thiết bị này?
+- Kỹ thuật viên nào gần nhất?
+- Tầng/khu vực nào đang có cảnh báo?
 
-The current MVP does not implement:
+Viewer IFC truyền thống chỉ hiển thị geometry, chưa đủ để hỗ trợ workflow vận hành.
 
-- Real MQTT broker.
-- Real device platform.
-- Real BMS/CMMS integration.
-- Production-grade indoor navigation.
-- Production-grade spatial index.
-- Full IFC authoring/editing workflow.
-- Persistent backend database for operations data.
-- Multi-user authorization, audit log, or role-based access control.
+### 2.2 Dữ Liệu Thiết Bị Và BIM Bị Tách Rời
 
-## 4. System Context
+Trong thực tế:
 
 ```text
-User
-  |
-  | Browser
-  v
+IFC/BIM       -> geometry, GlobalId, metadata thiết kế
+Asset DB      -> mã asset, loại thiết bị, vị trí vận hành
+Device/IoT    -> device_id, telemetry, trạng thái
+CMMS/WorkOrder-> xử lý sự cố, kỹ thuật viên
+```
+
+Demo này chứng minh cách nối các lớp đó bằng mapping:
+
+```text
+asset.source_global_id -> IFC object.GlobalId
+asset.device_id        -> telemetry identity
+asset.building_id      -> building/campus identity
+```
+
+### 2.3 Không Thể Load Tất Cả IFC Chi Tiết Ở Quy Mô Campus
+
+Nếu có nhiều tòa, load trực tiếp nhiều IFC vào cùng một viewer sẽ nặng.
+
+Demo hiện dùng hướng thực tế hơn:
+
+```text
+Campus View       -> GLB preview nhẹ
+Building Detail   -> load IFC thật khi người dùng chọn tòa
+```
+
+Đây là hướng phù hợp để mở rộng từ một tòa sang campus, và sau này có thể tiến tới city scale với LOD/tile/GIS.
+
+## 3. Công Nghệ Và Open-Source Đang Dùng
+
+### 3.1 Frontend
+
+```text
+React 18
+Vite
+Three.js
+Lucide React
+```
+
+Vai trò:
+
+- `React`: dựng UI Digital Twin Operations.
+- `Vite`: dev server, build tool, đồng thời mock API local.
+- `Three.js`: render campus 3D, GLB preview, marker technician.
+- `Lucide React`: icon UI.
+
+### 3.2 IFC / BIM Viewer
+
+```text
+@thatopen/components
+@thatopen/components-front
+@thatopen/fragments
+web-ifc
+```
+
+Vai trò:
+
+- `web-ifc`: đọc IFC trong browser/Node, parse geometry và metadata.
+- `That Open Components`: dựng IFC viewer, fragment manager, raycast/pick object, color/highlight object.
+- `@thatopen/fragments`: hỗ trợ render IFC fragment/worker.
+
+### 3.3 GLB Preview Pipeline
+
+```text
+three
+GLTFExporter
+web-ifc
+```
+
+Script:
+
+```text
+scripts/generate_ifc_glb_previews.mjs
+```
+
+Vai trò:
+
+- Đọc IFC từ `output/`.
+- Convert geometry sang GLB.
+- Lưu GLB vào `digital-twin-viewer/public/model-previews/`.
+- Cập nhật `preview_glb` trong `mock-db/site-layout.json`.
+
+### 3.4 Natural Language Search
+
+```text
+Ollama
+Qwen 2.5 1.5B
+Rule-based fallback
+```
+
+Vai trò:
+
+- Ollama/Qwen chỉ dùng làm intent parser.
+- LLM trả JSON intent, không trực tiếp query IFC.
+- Nếu Ollama offline, hệ thống dùng rule-based parser fallback.
+
+### 3.5 Streamlit BIM Pipeline
+
+```text
+Streamlit
+Python services
+rules/*.py
+```
+
+Vai trò:
+
+- Đọc IFC.
+- Validate metadata.
+- Export handover data.
+- Phục vụ phần BIM pipeline cũ của dự án.
+
+## 4. Phạm Vi Hiện Tại
+
+### Có Trong MVP
+
+- Campus view nhiều tòa.
+- GLB preview cho màn tổng quan.
+- IFC detail view cho từng tòa.
+- Asset registry mock.
+- Technician registry mock.
+- Telemetry simulator.
+- Alert engine.
+- Structured search.
+- Natural language search.
+- 2D campus map.
+- 2D floorplan tầng 9/tầng 10.
+- Spatial search.
+- Route mock.
+- Technician dispatch.
+- Browser route `/campus` và `/building/:buildingId`.
+
+### Chưa Có Trong MVP
+
+- MQTT broker thật.
+- Device platform thật.
+- BMS/CMMS thật.
+- Database backend thật.
+- Work order lifecycle thật.
+- Indoor routing graph thật.
+- GIS/base map thật.
+- Authentication/authorization.
+- Asset extraction tự động cho mọi IFC.
+- Upload IFC rồi auto generate GLB preview trên UI.
+
+## 5. Kiến Trúc Tổng Quan
+
+```text
+User Browser
+   |
+   v
 React Digital Twin Viewer
-  |
-  | Vite mock API
-  v
-Local mock data / IFC files / Ollama
+   |
+   | REST-like mock API
+   v
+Vite Dev Server
+   |
+   +--> output/*.ifc
+   +--> digital-twin-viewer/public/model-previews/*.glb
+   +--> mock-db/*.json
+   +--> web-ifc wasm / fragments worker
+   +--> Ollama local API
 
 Streamlit BIM Pipeline
-  |
-  v
-IFC validation / data cleaning / export package
+   |
+   +--> services/*.py
+   +--> rules/*.py
+   +--> output/*
 ```
 
-The system currently runs as local development components:
+## 6. Thành Phần Chính
 
-- Streamlit app for BIM pipeline workflows.
-- Vite React app for Digital Twin operations viewer.
-- Local files in `output/`, `mock-db/`, `rules/`, and `docs/`.
-- Optional Ollama server at `http://127.0.0.1:11434`.
+### 6.1 React Digital Twin Viewer
 
-## 5. High-Level Architecture
+File chính:
 
 ```text
-                         +-------------------------+
-                         |      Streamlit App      |
-                         | app.py                  |
-                         | BIM pipeline workflow   |
-                         +-----------+-------------+
-                                     |
-                                     | reads/writes
-                                     v
-       +-----------------------------+-----------------------------+
-       | Local Workspace                                           |
-       |                                                             |
-       | output/*.ifc                                               |
-       | output/*_export.*                                          |
-       | mock-db/*.json                                             |
-       | rules/*.py / rules/*.json                                  |
-       | docs/*.md                                                  |
-       +-----------------------------+-----------------------------+
-                                     ^
-                                     | reads
-                                     |
-+------------------------------------+------------------------------------+
-|                         Vite Dev Server                                 |
-| digital-twin-viewer/vite.config.js                                      |
-|                                                                         |
-| /api/files                                                              |
-| /api/operations/assets                                                  |
-| /api/operations/technicians                                             |
-| /api/operations/floorplan                                               |
-| /api/operations/nl-search                                               |
-| /api/operations/llm-status                                              |
-| /bim-output/*                                                           |
-| /wasm/*                                                                 |
-| /fragments-worker/worker.mjs                                            |
-+------------------------------------+------------------------------------+
-                                     ^
-                                     |
-                                     v
-+------------------------------------+------------------------------------+
-|                       React Operations Viewer                            |
-| digital-twin-viewer/src/main.jsx                                        |
-|                                                                         |
-| IFC 3D viewer                                                           |
-| Asset registry panel                                                    |
-| Natural language search                                                 |
-| Telemetry simulator                                                     |
-| Alert engine                                                            |
-| 2D floorplan                                                            |
-| Spatial search                                                          |
-| Route mock                                                              |
-| Technician dispatch                                                     |
-| System relationships                                                    |
-+------------------------------------+------------------------------------+
-                                     |
-                                     | optional HTTP
-                                     v
-                         +-----------+-------------+
-                         |       Ollama/Qwen       |
-                         | 127.0.0.1:11434         |
-                         | Intent JSON parser      |
-                         +-------------------------+
+digital-twin-viewer/src/main.jsx
+digital-twin-viewer/src/styles.css
 ```
 
-## 6. Major Components
+Chức năng:
 
-### 6.1 Streamlit BIM Pipeline
+- Campus 3D view.
+- Building detail IFC viewer.
+- Sidebar asset/search/telemetry.
+- Panel selected building/asset.
+- 2D campus map.
+- 2D floorplan theo tầng.
+- Alert/dispatch/spatial/system relationship.
 
-Main purpose:
+### 6.2 Vite Mock API
 
-- Prepare IFC/RVT inputs.
-- Validate IFC compliance.
-- Inspect IFC objects and properties.
-- Validate and clean Digital Twin metadata.
-- Export handover packages.
+File:
 
-Key areas:
+```text
+digital-twin-viewer/vite.config.js
+```
 
-- `app.py`
-- `services/ifc_reader.py`
-- `services/validator.py`
-- `services/exporter.py`
-- `services/correction_template.py`
-- `rules/classification_rules.py`
-
-Output artifacts:
-
-- Normalized JSON/CSV/Excel exports in `output/`.
-- Mock Digital Twin store in `mock-db/`.
-
-### 6.2 React Digital Twin Operations Viewer
-
-Main purpose:
-
-- Provide an operations-oriented 3D/2D Digital Twin UI.
-- Load IFC geometry using That Open / web-ifc.
-- Show asset registry and operational data.
-- Demonstrate incident response workflows.
-
-Key files:
-
-- `digital-twin-viewer/src/main.jsx`
-- `digital-twin-viewer/src/styles.css`
-- `digital-twin-viewer/vite.config.js`
-
-Main UI areas:
-
-- 3D IFC viewport.
-- Left operations rail.
-- Right selected asset context panel.
-- 2D floorplan.
-- Telemetry, alert, dispatch, and system relationship panels.
-
-### 6.3 Vite Mock API
-
-The Vite dev server acts as a lightweight backend for the React viewer.
-
-Key file:
-
-- `digital-twin-viewer/vite.config.js`
-
-Responsibilities:
-
-- List IFC files from `output/`.
-- Serve IFC files to the browser.
-- Serve mock operations assets and technicians.
-- Serve IFC-derived 2D floorplans.
-- Proxy natural language search requests to Ollama.
-- Provide LLM health/status checks.
-- Serve web-ifc WASM and fragments worker.
-
-Important endpoints:
+Endpoint chính:
 
 ```text
 GET  /api/files
 GET  /api/operations/assets
 GET  /api/operations/technicians
+GET  /api/operations/incidents
+GET  /api/operations/site-layout
 GET  /api/operations/floorplan?floor=Level%209
 GET  /api/operations/llm-status
 POST /api/operations/nl-search
@@ -217,149 +250,140 @@ GET  /wasm/*
 GET  /fragments-worker/worker.mjs
 ```
 
-### 6.4 Mock Data Store
+Vai trò:
 
-The MVP uses JSON files instead of a database.
+- Serve IFC từ `output/`.
+- Serve mock asset/technician/site/floorplan.
+- Gọi Ollama cho natural language search.
+- Serve WebAssembly và worker cần cho IFC viewer.
 
-Important files:
+### 6.3 Mock Data Store
+
+Các file chính:
 
 ```text
+mock-db/site-layout.json
 mock-db/operations-assets.json
 mock-db/operations-technicians.json
 mock-db/operations-floorplan-level-9.json
 mock-db/operations-floorplan-level-10.json
 ```
 
-The operations asset registry is currently fixed/mock data, not dynamically extracted per selected IFC file.
+Hiện tại chưa dùng database. Dữ liệu vận hành nằm trong JSON để demo nhanh.
 
-Current mapping rule:
+### 6.4 Campus Site View
 
-```text
-operations asset.source_global_id -> IFC object.GlobalId
-```
-
-### 6.5 IFC Equipment Generation
-
-The Marriott demo IFC is generated by copying the original IFC and injecting demo equipment.
-
-Key script:
+File cấu hình:
 
 ```text
-scripts/add_equipment_to_marriott_ifc.mjs
+mock-db/site-layout.json
 ```
 
-Input:
+Màn campus dùng:
 
 ```text
-output/20260609_173819_MARRIOTT_DSC_ARC_R24_aps.ifc
+preview_glb -> render tòa nhẹ trên 3D overview
+ifc_file    -> mở IFC thật trong Building Detail View
+position    -> đặt tòa trong khu đất
+size        -> scale preview/footprint
 ```
 
-Output:
+Route:
 
 ```text
-output/20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc
+/campus
+/building/NHA_1
+/building/NHA_2
+/building/MARRIOTT_EQUIPMENT
+/building/MARRIOTT_FIXED
 ```
 
-The script adds modeled equipment such as:
+Back/Forward của trình duyệt được xử lý bằng History API native, chưa dùng `react-router-dom`.
 
-- Camera.
-- Light.
-- Smoke sensor.
-- Extract fan.
-- AHU.
-- Pump.
-- Electric meter.
+### 6.5 Building Detail IFC Viewer
 
-### 6.6 IFC-Derived 2D Floorplan Extraction
-
-Key script:
+Khi mở một tòa:
 
 ```text
-scripts/extract_ifc_floorplan.mjs
+selected building.ifc_file
+-> GET /bim-output/:file
+-> That Open / web-ifc load geometry
+-> build GlobalId/localId mapping
 ```
 
-Purpose:
+Asset có `source_global_id` sẽ locate/highlight được object thật trong IFC.
 
-- Reads IFC mesh geometry.
-- Projects selected floor geometry top-down.
-- Generates lightweight 2D floorplan JSON.
+### 6.6 Telemetry Simulator Và Alert Engine
 
-Outputs:
+Telemetry được sinh trong React runtime.
+
+Ví dụ:
 
 ```text
-mock-db/operations-floorplan-level-9.json
-mock-db/operations-floorplan-level-10.json
+Camera         -> online, recording, temperature_c
+Extract Fan    -> running, speed_rpm, vibration_mm_s
+AHU            -> supply_temp_c, filter_dp_pa, fan_status
+Electric Meter -> power_kw, energy_kwh, voltage_v
+Light          -> on, dimming_pct, power_w
 ```
 
-Limit:
-
-- This is a bounding-box/projection based floorplan, not a production CAD-like indoor map.
-
-### 6.7 Ollama / Qwen Natural Language Parser
-
-Ollama runs locally and hosts Qwen:
+Alert được tạo từ trạng thái:
 
 ```text
-http://127.0.0.1:11434
+Warning -> Low
+Fault   -> High
+Offline -> Medium
 ```
 
-Current model:
+### 6.7 Natural Language Search
+
+Luồng:
 
 ```text
-qwen2.5:1.5b
+User query
+-> POST /api/operations/nl-search
+-> Ollama/Qwen parse thành JSON intent
+-> validate/coerce intent
+-> React áp dụng filter/spatial/locate
 ```
 
-Configuration:
+Nếu Ollama lỗi:
 
 ```text
-.env
-OPERATIONS_LLM_MODEL=qwen2.5:1.5b
-OPERATIONS_LLM_URL=http://127.0.0.1:11434/api/generate
+rule-based parser fallback
 ```
 
-The LLM is used only as an **intent parser**. It does not directly query IFC geometry or mutate application state.
-
-Output contract:
-
-```json
-{
-  "intent": "asset_search|spatial_search|locate|dispatch|relationship|unknown",
-  "filters": {
-    "search": "",
-    "type": "",
-    "floor": "",
-    "zone": "",
-    "status": "",
-    "specialty": "",
-    "problemOnly": false
-  },
-  "spatial": {
-    "target_type": "",
-    "near_asset_id": "",
-    "near_asset_type": "",
-    "near_status": "",
-    "radius_m": 6
-  },
-  "action": "show_results|locate_first",
-  "explanation": "short explanation"
-}
-```
-
-Fallback:
-
-- If Ollama is unavailable, `buildRuleBasedIntent()` parses the query with simple rules.
-
-## 7. Key Data Models
-
-### 7.1 Operations Asset
-
-Stored in:
+Ví dụ query:
 
 ```text
-mock-db/operations-assets.json
+tìm camera quanh AHU trong bán kính 8m
+thiết bị nào đang lỗi ở tầng 10
+tìm sensor quanh bơm
 ```
 
-Important fields:
+## 7. Data Model Chính
+
+### 7.1 Building
+
+Trong `mock-db/site-layout.json`:
+
+```text
+building_id
+name
+ifc_file
+preview_glb
+asset_source_building_id
+position
+rotation_deg
+size
+floors
+color
+description
+```
+
+### 7.2 Asset
+
+Trong `mock-db/operations-assets.json`:
 
 ```text
 asset_id
@@ -368,13 +392,11 @@ asset_type
 ifc_class
 source_global_id
 device_id
+building_id
 system
 floor
-floor_elevation_m
 zone
 location
-manufacturer
-model
 status
 criticality
 specialty
@@ -383,23 +405,18 @@ mqtt_topic
 telemetry_template
 ```
 
-Important identity fields:
+Các identity quan trọng:
 
 ```text
-asset_id          -> operations identity
-source_global_id  -> IFC object GlobalId
-device_id         -> telemetry identity
+asset_id          -> định danh vận hành
+source_global_id  -> liên kết tới IFC object
+device_id         -> định danh telemetry/device
+building_id       -> liên kết tới building/campus
 ```
 
-### 7.2 Technician
+### 7.3 Technician
 
-Stored in:
-
-```text
-mock-db/operations-technicians.json
-```
-
-Important fields:
+Trong `mock-db/operations-technicians.json`:
 
 ```text
 technician_id
@@ -407,18 +424,27 @@ name
 specialties
 current_zone
 position
+site_position
 availability
 ```
 
-### 7.3 Floorplan
-
-Stored in:
+Ý nghĩa:
 
 ```text
-mock-db/operations-floorplan-level-*.json
+position      -> tọa độ mock trong tòa, đơn vị mm
+site_position -> tọa độ ngoài campus, đơn vị m
 ```
 
-Important fields:
+### 7.4 Floorplan
+
+Trong:
+
+```text
+mock-db/operations-floorplan-level-9.json
+mock-db/operations-floorplan-level-10.json
+```
+
+Nội dung:
 
 ```text
 source_ifc
@@ -432,168 +458,238 @@ layers.equipment
 stats
 ```
 
-### 7.4 Telemetry
+## 8. Luồng Runtime Chính
 
-Telemetry is generated in the React runtime.
+### 8.0 Data Quality
 
-Examples:
+Trước khi vận hành, hệ thống đánh giá mức độ sẵn sàng của dữ liệu asset.
+
+Các chỉ số đang có:
 
 ```text
-Camera:
-online, recording, temperature_c
-
-Fan:
-running, speed_rpm, vibration_mm_s
-
-AHU:
-supply_temp_c, filter_dp_pa, fan_status
-
-Electric Meter:
-power_kw, energy_kwh, voltage_v
+Total assets
+Assets mapped to IFC GlobalId
+Assets missing source_global_id
+Assets with device_id
+Assets with mqtt_topic
+Assets with position
+Assets with building_id
+Assets with telemetry template
 ```
 
-## 8. Main Runtime Flows
-
-### 8.1 Load IFC Model
+Mỗi asset có quality status:
 
 ```text
-React starts
--> GET /api/files
--> choose preferred IFC
--> GET /bim-output/:ifcFile
--> That Open / web-ifc loads geometry
--> build GlobalId/localId mapping
+Ready
+Missing IFC Link
+Missing Device Link
+Missing Position
+Missing Building
+Incomplete
 ```
 
-### 8.2 Load Operations Data
+Ý nghĩa:
+
+- `Ready`: asset đủ mapping BIM, device/telemetry, vị trí và building.
+- `Missing IFC Link`: asset thiếu hoặc không xác nhận được liên kết IFC object.
+- `Missing Device Link`: asset thiếu `device_id`, `mqtt_topic` hoặc telemetry.
+- `Missing Position`: asset chưa có tọa độ phục vụ map/spatial/route.
+- `Missing Building`: asset chưa biết thuộc tòa nào.
+- `Incomplete`: asset thiếu nhiều nhóm dữ liệu.
+
+UI hiện có:
+
+- Data Quality panel ở rail trái.
+- Filter asset theo data issue.
+- Mapping Detail panel khi chọn asset.
+
+### 8.1 Mở Campus
 
 ```text
-React starts
--> GET /api/operations/assets
--> GET /api/operations/technicians
--> GET /api/operations/floorplan
--> initialize telemetry from registry status
+Browser /campus
+-> React bootstrap
+-> GET /api/operations/site-layout
+-> load GLB preview từ preview_glb
+-> render land/road/building/technician markers
+```
+
+### 8.2 Mở Building Detail
+
+```text
+Click/Open tòa
+-> push URL /building/:buildingId
+-> tìm building trong site-layout
+-> lấy ifc_file
+-> load IFC thật
+-> lọc asset theo building asset source
 ```
 
 ### 8.3 Locate Asset
 
 ```text
-User selects asset from list/search/alert/map
+User chọn asset
 -> asset.source_global_id
--> web-ifc getLocalIdsByGuids()
--> set color / bounding frame
--> zoom camera to object bbox
--> update 2D selected marker
+-> web-ifc tìm localId
+-> highlight/bounding frame màu cam
+-> zoom camera tới object
+-> update marker trên 2D floorplan
 ```
 
-If an asset has no `source_global_id`, it can still exist in the registry and 2D map, but cannot be highlighted as a real IFC object.
-
-### 8.4 Natural Language Search
+### 8.4 Spatial Search
 
 ```text
-User enters natural language query
--> React POST /api/operations/nl-search
--> Vite API builds asset catalog and prompt
--> Ollama/Qwen returns JSON intent
--> Vite validates/coerces intent
--> React applies filters/spatial/locate behavior
+Selected asset làm tâm
+-> tính khoảng cách Euclidean x/y
+-> lọc theo radius/type
+-> trả danh sách gần nhất
 ```
 
-If Ollama fails:
+Giới hạn:
+
+- Chưa có route graph.
+- Chưa xét tường/cửa/chướng ngại.
+- Chưa có spatial index.
+
+### 8.5 Dispatch
+
+Ở campus:
 
 ```text
-Vite API -> rule-based parser fallback -> React
+selected building.position
+-> technician.site_position
+-> tính khoảng cách
+-> xếp hạng technician gần tòa nhất
 ```
 
-### 8.5 Spatial Search
+Ở building detail:
 
 ```text
-Selected/near asset is used as center
--> compare x/y position to all other assets
--> distance = sqrt(dx^2 + dy^2) / 1000
--> filter by radius and target type
+selected asset.position
+-> technician.position
+-> cộng điểm specialty match
+-> trừ điểm Busy
+-> xếp hạng technician phù hợp
 ```
 
-Current limitation:
+### 8.6 Incident Workflow
 
-- 2D Euclidean distance only.
-- No wall, door, route, or obstacle awareness.
-
-### 8.6 Telemetry Simulation
+Alert không chỉ dừng ở cảnh báo màu đỏ. Khi alert xuất hiện, React runtime tự tạo incident:
 
 ```text
-React interval tick
--> simulateTelemetry()
--> generate telemetry per asset type
--> status remains stable by registry/scenario
--> buildAlerts()
+Alert Warning/Fault/Offline
+-> Incident(New)
 ```
 
-Scenario control:
+Không tạo trùng nếu cùng asset và cùng status đã có incident.
+
+Incident lifecycle MVP:
 
 ```text
-Baseline Operations
-Normal Day
-HVAC Warning
-Camera Offline
-Electrical Fault
-Fire Watch
+New
+Acknowledged
+Assigned
+In Progress
+Resolved
+Closed
 ```
 
-### 8.7 Alert Engine
+Incident detail hỗ trợ:
+
+- Click incident để chọn và locate asset.
+- Acknowledge.
+- Assign technician.
+- Mark In Progress.
+- Resolve.
+- Close.
+
+Hiện incident là runtime state. File `mock-db/operations-incidents.json` tồn tại như seed rỗng để chuẩn bị cho persist/mock backend sau này.
+
+### 8.7 Work Order Lifecycle
+
+Từ incident detail, người dùng có thể tạo work order:
 
 ```text
-Asset status Warning/Fault/Offline
--> build alert item
--> display in Alert Panel
--> click alert -> locate asset
+Incident
+-> recommended technician
+-> Create Work Order
+-> WorkOrder(Assigned)
 ```
 
-Severity mapping:
+Work order gồm:
 
 ```text
-Warning -> Low
-Fault   -> High
-Offline -> Medium
+work_order_id
+incident_id
+asset_id
+building_id
+technician_id
+priority
+status
+task
+created_at
+due_at
 ```
 
-### 8.8 Technician Dispatch
+Trạng thái work order MVP:
 
 ```text
-Selected asset
--> compare required specialty with technician specialties
--> compute distance to technician position
--> apply availability penalty
--> sort by score
+Assigned
+Accepted
+On Site
+In Progress
+Resolved
+Cancelled
 ```
 
-### 8.9 Runtime Add Asset
+Khi chọn work order:
+
+- Chọn incident liên quan.
+- Locate asset liên quan.
+- Hiển thị technician được assign.
+- Hiển thị building/floor.
+
+Khi work order chuyển `Resolved`, incident liên quan cũng chuyển `Resolved`.
+
+## 9. Các Script Offline
+
+### 9.1 Chèn Thiết Bị Vào IFC Marriott
 
 ```text
-User fills Add Runtime Asset form
--> createMockAsset()
--> append to React operationAssets state
--> initialize telemetry
--> show in asset list, 2D map, spatial search, relationships
+scripts/add_equipment_to_marriott_ifc.mjs
 ```
 
-Current limitation:
+Tạo IFC demo có camera, đèn, sensor, fan, AHU, pump, electric meter.
 
-- Runtime-only.
-- Not persisted to `operations-assets.json`.
-- Not written into IFC.
-
-## 9. Configuration
-
-### 9.1 APS
-
-Stored in:
+### 9.2 Extract 2D Floorplan Từ IFC
 
 ```text
-.env
+scripts/extract_ifc_floorplan.mjs
 ```
 
-Variables:
+Đọc IFC mesh, project top-down theo tầng, sinh JSON floorplan.
+
+### 9.3 Convert IFC Sang GLB Preview
+
+```text
+scripts/generate_ifc_glb_previews.mjs
+```
+
+Đọc các tòa trong `site-layout.json`, convert `ifc_file` sang GLB preview.
+
+## 10. Cấu Hình
+
+### 10.1 Ollama/Qwen
+
+Trong `.env`:
+
+```text
+OPERATIONS_LLM_MODEL=qwen2.5:1.5b
+OPERATIONS_LLM_URL=http://127.0.0.1:11434/api/generate
+```
+
+### 10.2 APS
+
+Vẫn có cấu hình APS trong `.env`, nhưng demo operations hiện ưu tiên That Open / web-ifc local viewer.
 
 ```text
 APS_CLIENT_ID
@@ -603,139 +699,90 @@ APS_BUCKET_KEY
 APS_REGION
 ```
 
-### 9.2 Operations LLM
+## 11. Triển Khai Local
 
-Stored in:
+Chạy React viewer:
 
-```text
-.env
-```
-
-Variables:
-
-```text
-OPERATIONS_LLM_MODEL=qwen2.5:1.5b
-OPERATIONS_LLM_URL=http://127.0.0.1:11434/api/generate
-```
-
-### 9.3 RVT to IFC Adapter
-
-Optional:
-
-```text
-RVT_TO_IFC_COMMAND
-ODA_RVT_TO_IFC_COMMAND
-```
-
-## 10. Error Handling Strategy
-
-### IFC Load Errors
-
-- Viewer state is set to `Error`.
-- User-facing status pill displays the error message.
-
-### Missing IFC Object for Asset
-
-- Asset remains visible in registry.
-- Locate reports no IFC object for that asset.
-- This is expected for runtime/mock assets without `source_global_id`.
-
-### Ollama Failure
-
-- Natural language search falls back to rule-based parser.
-- `/api/operations/llm-status` reports offline/fallback status.
-
-### Invalid LLM JSON
-
-- Vite API catches parse errors.
-- Rule parser fallback is returned.
-
-## 11. Security Considerations
-
-Current MVP is local-only and not production hardened.
-
-Important notes:
-
-- `.env` contains secrets and must not be committed.
-- Vite API currently reads local files directly.
-- No authentication/authorization is implemented.
-- No input persistence or audit trail for runtime-added assets.
-- Natural language input is sent to local Ollama only, not external cloud LLM.
-
-## 12. Scalability Considerations
-
-Current design is suitable for demo-scale data.
-
-Known scalability limits:
-
-- Asset registry is JSON, not indexed database.
-- Spatial search is linear scan in frontend.
-- Floorplan extraction is offline/script-based.
-- Telemetry simulator runs in React, not backend.
-- IFC loading happens client-side and may become heavy for large models.
-- Natural language parsing is single local model call per query.
-
-## 13. Deployment View
-
-Current local deployment:
-
-```text
-Terminal 1:
-streamlit run app.py
-
-Terminal 2:
+```bash
 cd digital-twin-viewer
 npm run dev
+```
 
-Terminal 3:
+Generate GLB preview:
+
+```bash
+cd digital-twin-viewer
+npm run generate:previews
+```
+
+Chạy Ollama nếu muốn dùng LLM:
+
+```bash
 ollama serve
+ollama pull qwen2.5:1.5b
 ```
 
 Browser:
 
 ```text
-Streamlit: http://localhost:8501
-React viewer: http://127.0.0.1:5173
-Ollama API: http://127.0.0.1:11434
+http://127.0.0.1:5173/campus
 ```
 
-## 14. Production Evolution
+## 12. Giới Hạn Hiện Tại
 
-Recommended next architecture for production:
+- Dữ liệu asset/technician/site vẫn là mock JSON.
+- Telemetry simulator chạy trong frontend.
+- Alert rule còn đơn giản.
+- Route là mock/Euclidean, chưa phải navigation thật.
+- 2D floorplan là projection/bounding-box từ IFC, chưa phải CAD floorplan production.
+- Natural language search chỉ parse intent, chưa phải agent tự suy luận sâu.
+- GLB preview là preprocess bằng script, chưa có UI quản trị.
+- Chưa có incident/work order lifecycle.
+
+## 13. Hướng Phát Triển Production
+
+Nếu chuyển từ demo sang hệ thống thật, kiến trúc nên tiến tới:
 
 ```text
-IFC / BIM source
--> Asset extraction service
+BIM/IFC/RVT source
+-> Model processing service
+-> GLB/3D Tiles/Fragments/LOD storage
 -> Asset Registry database
 -> Device Platform / MQTT / BMS connector
--> Telemetry time-series database
+-> Time-series telemetry database
 -> Alert rule engine
--> Work order / CMMS integration
--> 3D/2D Digital Twin viewer
+-> Incident / Work Order service
+-> Technician dispatch service
+-> 3D/2D Digital Twin web viewer
 ```
 
-Recommended improvements:
+Các phần nên bổ sung tiếp:
 
-- Backend service for operations APIs.
-- Persistent asset registry.
-- Real telemetry ingestion.
-- Configurable alert rules.
-- Work order lifecycle.
-- Real route graph/navigation mesh.
-- Spatial index by floor/zone.
-- IFC-to-asset extraction per selected model.
-- User roles and audit trail.
-- Production-grade 2D floorplan source.
+- Asset extraction và mapping quality panel.
+- Incident/Work Order mock.
+- Outdoor route trên campus map.
+- Indoor route graph theo tầng.
+- Building/floor breadcrumb.
+- Preview Manager cho GLB.
+- Persistent backend thay cho JSON.
+- Role-based UI: operator, technician, manager.
+- Audit log và phân quyền.
 
-## 15. Current Acceptance Summary
+## 14. Kết Luận
 
-The current MVP proves:
+MVP hiện tại chứng minh được luồng:
 
-- IFC geometry can be loaded locally in 3D.
-- IFC objects can be linked to operations assets by GlobalId.
-- Asset status can drive color, alerts, and workflows.
-- Natural language can be converted to structured intent locally.
-- Spatial search, route mock, and technician dispatch can be demonstrated with registry coordinates.
-- 2D floorplans can be derived from IFC geometry for demo-level map context.
+```text
+Campus
+-> Building
+-> Asset
+-> Telemetry
+-> Alert
+-> Locate
+-> Route
+-> Dispatch
+```
 
-The MVP intentionally keeps operational systems mocked so the team can validate the Digital Twin workflow before integrating real device and enterprise platforms.
+Painpoint chính được giải quyết là biến IFC/BIM từ mô hình thiết kế thành giao diện vận hành có ngữ cảnh: tìm thiết bị, xem trạng thái, định vị lỗi, nhìn quan hệ không gian và gợi ý người xử lý.
+
+Các hệ thống thật ngoài thị trường thường cũng đi theo hướng tương tự: giữ IFC/RVT làm source/detail model, convert sang format nhẹ hoặc tiled format cho web preview, và tách dữ liệu vận hành sang asset/device/telemetry database riêng.

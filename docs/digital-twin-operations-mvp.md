@@ -353,3 +353,141 @@ Nếu Ollama chưa chạy hoặc model chưa có, hệ thống tự fallback san
 - Nâng cấp floor plan từ bbox projection sang section/polygon chính xác hơn hoặc dùng bản vẽ mặt bằng thật.
 - Xây route graph/navigation mesh theo hành lang, cửa và khu vực cấm.
 - Đồng bộ asset registry với CMMS/BMS thay vì JSON mock.
+## Bổ Sung Mới: Data Quality, Incident, Work Order
+
+### Data Quality
+
+Demo hiện có Data Quality mức MVP để đánh giá dữ liệu asset đã đủ sẵn sàng cho vận hành hay chưa.
+
+Panel hiển thị:
+
+```text
+Total assets
+Assets mapped to IFC GlobalId
+Assets missing source_global_id
+Assets with device_id
+Assets with mqtt_topic
+Assets with position
+Assets with building_id
+Assets with telemetry template
+```
+
+Mỗi asset có quality status:
+
+```text
+Ready
+Missing IFC Link
+Missing Device Link
+Missing Position
+Missing Building
+Incomplete
+```
+
+UI hỗ trợ filter:
+
+```text
+Show only assets with data issues
+Show missing IFC mapping
+Show missing telemetry mapping
+Show missing position
+```
+
+Khi chọn asset, `Mapping Detail` cho biết:
+
+```text
+source_global_id exists?
+IFC object found?
+device_id exists?
+telemetry exists?
+position exists?
+building_id exists?
+```
+
+### Incident Workflow
+
+Alert hiện được chuyển thành incident runtime:
+
+```text
+Alert -> Incident(New)
+```
+
+Không tạo trùng nếu cùng asset và cùng status đã có incident.
+
+Incident lifecycle:
+
+```text
+New
+Acknowledged
+Assigned
+In Progress
+Resolved
+Closed
+```
+
+Người dùng có thể click incident để locate asset và thực hiện các hành động acknowledge, assign technician, mark in progress, resolve, close.
+
+File seed mock:
+
+```text
+mock-db/operations-incidents.json
+```
+
+Hiện thao tác incident là runtime state trong React, chưa persist ngược xuống JSON.
+
+### Work Order Lifecycle
+
+Từ incident detail có thể tạo work order mock:
+
+```text
+Incident -> Recommended technician -> Create Work Order
+```
+
+Work order hiển thị:
+
+```text
+WO ID
+Incident
+Technician
+Priority
+Status
+Due time
+Estimated repair time / ETA
+Asset
+Building/Floor
+```
+
+Work order hiện có thêm `Repair Time Estimator` mức MVP. Estimator tính theo:
+
+```text
+asset type
+incident severity
+current status: Warning / Fault / Offline
+technician distance
+technician availability
+specialty match
+asset criticality
+```
+
+Kết quả hiển thị trong Incident Detail và Work Order Detail:
+
+```text
+Estimated repair time
+Travel time
+Diagnosis time
+Fix time
+SLA target
+Confidence
+```
+
+Trạng thái work order MVP:
+
+```text
+Assigned
+Accepted
+On Site
+In Progress
+Resolved
+Cancelled
+```
+
+Khi chọn work order, UI chọn asset liên quan và route/floorplan cập nhật theo asset đó. Khi work order chuyển `Resolved`, incident liên quan cũng chuyển `Resolved`.

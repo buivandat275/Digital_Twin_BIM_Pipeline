@@ -1,7 +1,7 @@
 {
   "source_ifc": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
   "floor": "Level 9",
-  "generated_at": "2026-06-16T16:46:39.057Z",
+  "generated_at": "2026-06-24T13:19:50.394Z",
   "coordinate_system": {
     "unit": "mm",
     "note": "2D floorplan is derived from IFC mesh bounding boxes projected top-down into the same x/y plane used by operations-assets.json.",
@@ -5620,19 +5620,19 @@
         "global_id": "0MQTTcamdome0100000000",
         "polygon": [
           {
-            "x": 5010,
+            "x": 9610,
             "y": 3790
           },
           {
-            "x": 5390,
+            "x": 9990,
             "y": 3790
           },
           {
-            "x": 5390,
+            "x": 9990,
             "y": 3410
           },
           {
-            "x": 5010,
+            "x": 9610,
             "y": 3410
           }
         ]

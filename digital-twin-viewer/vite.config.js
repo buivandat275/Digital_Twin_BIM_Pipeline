@@ -229,11 +229,15 @@ function extractJsonObject(value = "") {
 }
 
 function coerceIntent(intent, fallback) {
+  const cleanObject = (value = {}) =>
+    Object.fromEntries(
+      Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null && entry !== ""),
+    );
   const output = {
     source: intent.source || "llm",
     intent: intent.intent || fallback.intent,
-    filters: { ...fallback.filters, ...(intent.filters || {}) },
-    spatial: { ...fallback.spatial, ...(intent.spatial || {}) },
+    filters: { ...fallback.filters, ...cleanObject(intent.filters || {}) },
+    spatial: { ...fallback.spatial, ...cleanObject(intent.spatial || {}) },
     action: intent.action || fallback.action,
     explanation: intent.explanation || "Parsed by local LLM.",
   };
@@ -430,6 +434,11 @@ function digitalTwinApi() {
 
         if (url.pathname === "/api/operations/technicians") {
           sendJson(res, readJson(path.join(mockDbDir, "operations-technicians.json"), []));
+          return;
+        }
+
+        if (url.pathname === "/api/operations/incidents") {
+          sendJson(res, readJson(path.join(mockDbDir, "operations-incidents.json"), []));
           return;
         }
 
