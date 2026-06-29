@@ -23,6 +23,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import * as OBC from "@thatopen/components";
+import { ApsViewerApp } from "./aps/ApsViewerApp.jsx";
+import { IntegrationApp } from "./integration/IntegrationApp.jsx";
 import "./styles.css";
 
 const PREFERRED_IFC = "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc";
@@ -3596,4 +3598,8 @@ const ThatOpenCanvas = React.forwardRef(function ThatOpenCanvas({ modelFile, onP
   return <div className="ifc-canvas" ref={containerRef} />;
 });
 
-createRoot(document.getElementById("root")).render(<App />);
+const rootApp = window.location.pathname.replace(/\/+$/, "") === "/aps-viewer"
+  ? <ApsViewerApp />
+  : <IntegrationApp />;
+
+createRoot(document.getElementById("root")).render(rootApp);

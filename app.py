@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import json
+import os
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlencode
 
 import pandas as pd
 import streamlit as st
+from dotenv import load_dotenv
 
 from rules.field_policy import get_policy_rows, get_profile, get_profile_names
 from rules.mapping_rules import DEFAULT_MAPPING
+from services.bms_device_importer import load_bms_device_file, merge_bms_devices
 from services.cleaner import apply_basic_clean
 from services.correction_template import (
     build_correction_template,
@@ -39,6 +44,7 @@ from services.rvt_converter import (
     get_default_json_export_command,
     save_rvt_upload,
 )
+from services.validated_twin_snapshot import build_validated_twin_snapshot, write_validated_twin_snapshot
 from services.validator import validate_assets
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -46,6 +52,7 @@ INPUT_DIR = BASE_DIR / "input"
 OUTPUT_DIR = BASE_DIR / "output"
 MOCK_DB_DIR = BASE_DIR / "mock-db"
 MAPPING_PATH = BASE_DIR / "rules" / "saved_mapping.json"
+load_dotenv(BASE_DIR / ".env")
 
 STATUS_FLOW = [
     "Uploaded",
@@ -85,6 +92,7 @@ def init_state() -> None:
         "project_name": "FZK Haus Demo",
         "upload_info": {},
         "current_ifc_path": "",
+        "local_ifc_path": os.getenv("LOCAL_IFC_PATH", ""),
         "rvt_input_path": "",
         "converted_ifc_path": "",
         "rvt_json_probe_path": "",
@@ -93,6 +101,10 @@ def init_state() -> None:
         "aps_translation_urn": "",
         "aps_result_path": "",
         "aps_conversion_log": "",
+        "aps_viewer_ready": False,
+        "aps_source_name": "",
+        "validated_snapshot_path": "",
+        "validated_snapshot_name": "",
         "rvt_converter_command": get_default_converter_command(),
         "rvt_json_export_command": get_default_json_export_command(),
         "ifc_compliance_df": pd.DataFrame(),
@@ -109,9 +121,12 @@ def init_state() -> None:
         "cleaned_objects": [],
         "validation_df": pd.DataFrame(),
         "validation_summary": {"total_errors": 0, "High": 0, "Medium": 0, "Low": 0},
-        "selected_profile": "building_om",
+        "selected_profile": "vsf_om_10",
         "correction_template_df": pd.DataFrame(),
         "correction_log_df": pd.DataFrame(),
+        "bms_device_df": pd.DataFrame(),
+        "bms_mapping_log_df": pd.DataFrame(),
+        "bms_mapping_summary": {},
         "mapping_df": default_mapping_dataframe(),
         "preview_tables": {},
         "processing_status": "Not started",
@@ -123,31 +138,32 @@ def init_state() -> None:
 
 
 def render_dashboard() -> None:
-    st.title("BIM Pipeline / BIM Converter")
-    st.caption("IFC upload, compliance validation, metadata correction, DTP handover export, and Digital Twin import.")
+    st.title("Pipeline BIM sang Digital Twin")
+    st.caption("Kiểm tra IFC, xác định asset vận hành, bổ sung dữ liệu O&M và chuẩn bị bàn giao.")
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Status", st.session_state.processing_status)
-    col2.metric("Objects", len(st.session_state.objects))
-    col3.metric("Cleaned Assets", len(st.session_state.cleaned_objects))
-    col4.metric("Validation Errors", st.session_state.validation_summary.get("total_errors", 0))
+    col1.metric("Trạng thái", st.session_state.processing_status)
+    col2.metric("Object IFC", len(st.session_state.objects))
+    col3.metric("Object đã chuẩn hóa", len(st.session_state.cleaned_objects))
+    col4.metric("Vấn đề dữ liệu", st.session_state.validation_summary.get("total_errors", 0))
 
     if st.session_state.last_error:
         st.error(st.session_state.last_error)
 
 
 def render_pipeline() -> None:
-    st.title("BIM Pipeline / BIM Converter")
-    rvt_convert, upload, compliance, inspect, validate, map_tab, preview, import_export = st.tabs(
+    st.title("Pipeline BIM sang Digital Twin")
+    rvt_convert, upload, aps_viewer, compliance, inspect, validate, map_tab, preview, import_export = st.tabs(
         [
-            "RVT Convert",
-            "Upload",
-            "IFC Compliance",
-            "Inspect",
-            "Validate/Clean",
-            "Map",
-            "Preview",
-            "Import/Export",
+            "1. Chuyển RVT",
+            "2. Nạp IFC",
+            "3. APS Viewer",
+            "4. Kiểm tra IFC",
+            "5. Kiểm tra object",
+            "6. Phạm vi & O&M",
+            "7. Mapping",
+            "8. Xem trước",
+            "9. Bàn giao",
         ]
     )
 
@@ -155,6 +171,8 @@ def render_pipeline() -> None:
         render_rvt_convert_tab()
     with upload:
         render_upload_tab()
+    with aps_viewer:
+        render_aps_viewer_tab()
     with compliance:
         render_ifc_compliance_tab()
     with inspect:
@@ -175,12 +193,28 @@ def render_upload_tab() -> None:
     st.session_state.project_name = st.text_input("project_name", st.session_state.project_name)
 
     uploaded_file = st.file_uploader("Upload IFC file", type=["ifc"])
+    local_ifc_value = st.text_input(
+        "Or use an IFC file already on this machine",
+        key="local_ifc_path",
+        placeholder="D:/path/to/model.ifc",
+        help="Local paths bypass the browser upload-size limit. The Streamlit server must be able to read the file.",
+    ).strip()
+    local_ifc_path = Path(local_ifc_value).expanduser() if local_ifc_value else None
+    if local_ifc_path:
+        if local_ifc_path.is_file() and local_ifc_path.suffix.lower() == ".ifc":
+            st.caption(f"Local IFC ready: {local_ifc_path.name} ({local_ifc_path.stat().st_size / 1024**2:.2f} MB)")
+        else:
+            st.warning("The local IFC path does not exist or is not an .ifc file.")
+
     sample_path = BASE_DIR / "sample-data" / "AC20-FZK-Haus.ifc"
-    use_sample = st.checkbox("Use bundled sample-data/AC20-FZK-Haus.ifc", value=uploaded_file is None)
+    use_sample = st.checkbox(
+        "Use bundled sample-data/AC20-FZK-Haus.ifc",
+        value=uploaded_file is None and local_ifc_path is None,
+    )
 
     if st.button("Read IFC", type="primary"):
-        if uploaded_file is None and not use_sample:
-            st.warning("Please upload an .ifc file or use the bundled sample file.")
+        if uploaded_file is None and local_ifc_path is None and not use_sample:
+            st.warning("Upload an .ifc file, enter a local IFC path, or use the bundled sample file.")
             return
         try:
             st.session_state.processing_status = "Uploaded"
@@ -188,6 +222,12 @@ def render_upload_tab() -> None:
             if uploaded_file is not None:
                 file_path = save_uploaded_file(uploaded_file)
                 file_name = uploaded_file.name
+            elif local_ifc_path is not None:
+                if not local_ifc_path.is_file() or local_ifc_path.suffix.lower() != ".ifc":
+                    st.warning("The local IFC path does not exist or is not an .ifc file.")
+                    return
+                file_path = local_ifc_path
+                file_name = local_ifc_path.name
             else:
                 file_path = sample_path
                 file_name = sample_path.name
@@ -202,6 +242,15 @@ def render_upload_tab() -> None:
 
     if st.session_state.upload_info:
         st.dataframe(pd.DataFrame([st.session_state.upload_info]), use_container_width=True)
+
+
+def render_aps_viewer_tab() -> None:
+    st.subheader("APS IFC Viewer")
+    st.caption(
+        "Upload the active IFC to Autodesk APS and translate it to SVF2 for cloud streaming. "
+        "This does not convert the IFC to another IFC file."
+    )
+    render_aps_converter_panel(key_prefix="ifc_viewer", viewer_only=True)
 
 
 def render_rvt_convert_tab() -> None:
@@ -257,7 +306,7 @@ def render_rvt_convert_tab() -> None:
         help="APS runs upload/translation/metadata extraction in Autodesk cloud. ODA/custom command produces a local IFC when available.",
     )
     if provider == "Autodesk APS Cloud":
-        render_aps_converter_panel()
+        render_aps_converter_panel(key_prefix="rvt_aps")
     elif provider == "Local ODA BimRv/IFC SDK":
         st.info(
             "After installing and activating ODA Trial, point this command to an ODA sample executable "
@@ -386,7 +435,7 @@ def render_rvt_convert_tab() -> None:
             st.text(st.session_state.aps_conversion_log)
 
 
-def render_aps_converter_panel() -> None:
+def render_aps_converter_panel(key_prefix: str = "aps", viewer_only: bool = False) -> None:
     st.info(
         "APS Cloud uploads the RVT/IFC to Autodesk OSS, starts a Model Derivative translation, "
         "then stores manifest and extracted metadata in output/*.json. It does not modify the original file."
@@ -424,15 +473,55 @@ def render_aps_converter_panel() -> None:
         st.warning("APS is not ready. Add APS_CLIENT_ID, APS_CLIENT_SECRET, and APS_BUCKET_KEY to .env.")
         return
 
-    aps_output = st.radio(
-        "APS output",
-        ["SVF2 viewer metadata", "IFC export"],
-        horizontal=True,
-        help=(
-            "SVF2 is for cloud viewing and metadata extraction. "
-            "IFC export asks APS Model Derivative to convert RVT to an IFC derivative and downloads it."
-        ),
+    source_options: list[tuple[str, Path, str]] = []
+    current_ifc_path = Path(st.session_state.current_ifc_path) if st.session_state.current_ifc_path else None
+    if current_ifc_path and current_ifc_path.exists():
+        current_ifc_name = st.session_state.upload_info.get("file_name") or current_ifc_path.name
+        source_options.append((f"Active IFC: {current_ifc_name}", current_ifc_path, current_ifc_name))
+
+    rvt_input_path = Path(st.session_state.rvt_input_path) if st.session_state.rvt_input_path else None
+    if not viewer_only and rvt_input_path and rvt_input_path.exists():
+        source_options.append((f"RVT input: {rvt_input_path.name}", rvt_input_path, rvt_input_path.name))
+
+    if not source_options:
+        message = (
+            "Read an IFC file in the Upload tab before building an APS viewable."
+            if viewer_only
+            else "Upload/read an IFC file or select an RVT file before running APS translation."
+        )
+        st.warning(message)
+        return
+
+    source_lookup = {label: (path, source_name) for label, path, source_name in source_options}
+    selected_source_label = st.selectbox(
+        "APS source model",
+        list(source_lookup),
+        help="The active IFC from the validation pipeline can be translated directly to an APS SVF2 viewable.",
+        key=f"{key_prefix}_source_model",
     )
+    source_path, source_name = source_lookup[selected_source_label]
+    existing_viewable = _find_existing_aps_viewable(source_name)
+    if existing_viewable and (
+        not st.session_state.aps_viewer_ready or st.session_state.aps_source_name != source_name
+    ):
+        st.session_state.aps_translation_urn = existing_viewable["urn"]
+        st.session_state.aps_result_path = str(existing_viewable["path"])
+        st.session_state.aps_source_name = source_name
+        st.session_state.aps_viewer_ready = True
+        st.caption(f"Reusing completed APS SVF2 viewable: {existing_viewable['path'].name}")
+
+    aps_output = "SVF2 viewer metadata"
+    if not viewer_only:
+        aps_output = st.radio(
+            "APS output",
+            ["SVF2 viewer metadata", "IFC export"],
+            horizontal=True,
+            help=(
+                "SVF2 is for cloud viewing and metadata extraction. "
+                "IFC export asks APS Model Derivative to convert RVT to an IFC derivative and downloads it."
+            ),
+            key=f"{key_prefix}_output",
+        )
     ifc_export_setting = ""
     if aps_output == "IFC export":
         ifc_export_setting = st.selectbox(
@@ -445,6 +534,7 @@ def render_aps_converter_panel() -> None:
                 "IFC2x3 Basic FM Handover View",
             ],
             help="Default uses APS/Revit's default IFC2x3 export. Named settings require support inside the RVT/Revit exporter.",
+            key=f"{key_prefix}_ifc_export_setting",
         )
 
     poll_timeout_minutes = st.number_input(
@@ -454,21 +544,20 @@ def render_aps_converter_panel() -> None:
         value=60,
         step=5,
         help="Large RVT files can take a long time in Model Derivative.",
+        key=f"{key_prefix}_timeout",
     )
     extract_properties = st.checkbox(
         "Fetch APS object properties after translation",
-        value=True,
+        value=not viewer_only,
         help="This can be slow and can create a large JSON file for big models.",
+        key=f"{key_prefix}_extract_properties",
     )
 
-    if st.button("Run APS Cloud Translation"):
-        if not st.session_state.rvt_input_path:
-            st.warning("Save or select an RVT file first.")
-            return
-        source_path = Path(st.session_state.rvt_input_path)
+    run_label = "Upload IFC and Build APS Viewable" if viewer_only else "Run APS Cloud Translation"
+    if st.button(run_label, type="primary" if viewer_only else "secondary", key=f"{key_prefix}_run"):
         try:
             with st.spinner("Uploading file to APS bucket..."):
-                upload_info = upload_object(source_path, config=config)
+                upload_info = upload_object(source_path, object_name=source_name, config=config)
                 urn = urn_from_object_id(upload_info["objectId"])
                 st.session_state.aps_translation_urn = urn
 
@@ -494,7 +583,7 @@ def render_aps_converter_panel() -> None:
                 derivative_urn = find_derivative_urn(manifest, "ifc")
                 if not derivative_urn:
                     raise APSError(f"APS IFC export finished but no IFC derivative was found in manifest: {manifest}")
-                output_ifc = OUTPUT_DIR / f"{source_path.stem}_aps.ifc"
+                output_ifc = OUTPUT_DIR / f"{Path(source_name).stem}_aps.ifc"
                 with st.spinner("Downloading APS IFC derivative..."):
                     downloaded_path = download_derivative(urn, derivative_urn, output_ifc, config=config)
                 downloaded_ifc = str(downloaded_path)
@@ -515,7 +604,7 @@ def render_aps_converter_panel() -> None:
                         properties = get_model_properties(urn, guid, config=config)
 
             result = {
-                "source_file": source_path.name,
+                "source_file": source_name,
                 "urn": urn,
                 "bucket_key": config.bucket_key,
                 "upload": upload_info,
@@ -525,8 +614,10 @@ def render_aps_converter_panel() -> None:
                 "properties": properties,
                 "downloaded_ifc": downloaded_ifc,
             }
-            result_path = write_aps_result(OUTPUT_DIR, source_path, result)
+            result_path = write_aps_result(OUTPUT_DIR, source_name, result)
             st.session_state.aps_result_path = str(result_path)
+            st.session_state.aps_source_name = source_name
+            st.session_state.aps_viewer_ready = aps_output == "SVF2 viewer metadata"
             st.session_state.aps_conversion_log = (
                 f"APS translation finished.\nURN: {urn}\nResult JSON: {result_path}"
             )
@@ -536,6 +627,48 @@ def render_aps_converter_panel() -> None:
                 st.success(f"APS translation finished. Metadata saved to {result_path.name}")
         except APSError as exc:
             st.error(str(exc))
+
+    if st.session_state.aps_viewer_ready and st.session_state.aps_translation_urn:
+        viewer_base_url = os.getenv("DIGITAL_TWIN_VIEWER_URL", "http://127.0.0.1:5173").rstrip("/")
+        viewer_query = urlencode(
+            {
+                "urn": st.session_state.aps_translation_urn,
+                "name": st.session_state.aps_source_name or source_name,
+            }
+        )
+        st.link_button(
+            "Open APS Viewer" if viewer_only else "Open Last APS Viewer",
+            f"{viewer_base_url}/aps-viewer?{viewer_query}",
+            type="primary",
+            help="Open the cloud-optimized SVF2 model in a separate viewer tab.",
+        )
+        st.caption(f"Last APS viewable: {st.session_state.aps_source_name or source_name}")
+
+
+def _find_existing_aps_viewable(source_name: str) -> dict | None:
+    if not source_name or not OUTPUT_DIR.exists():
+        return None
+    candidates = sorted(
+        OUTPUT_DIR.glob("*_aps_result.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for result_path in candidates:
+        try:
+            payload = json.loads(result_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        formats = payload.get("job", {}).get("acceptedJobs", {}).get("output", {}).get("formats", [])
+        output_format = formats[0].get("type", "") if formats else ""
+        manifest_status = payload.get("manifest", {}).get("status", "")
+        if (
+            payload.get("source_file") == source_name
+            and payload.get("urn")
+            and output_format == "svf2"
+            and manifest_status == "success"
+        ):
+            return {"path": result_path, "urn": payload["urn"]}
+    return None
 
 
 def _first_metadata_guid(metadata: dict) -> str:
@@ -641,15 +774,21 @@ def render_inspect_tab() -> None:
 
 
 def render_validate_tab() -> None:
-    st.subheader("Validate / Clean")
+    st.subheader("Kiểm tra 10 trường EMSD/VSF")
+    st.info(
+        "Pipeline chỉ kiểm tra: **(1) IFC có đúng cấu trúc BIM không** ở tab Kiểm tra IFC và "
+        "**(2) mỗi object thuộc phạm vi vận hành có đủ đúng 10 trường EMSD/VSF dưới đây không**. "
+        "Object `context` vẫn hiển thị trong 3D nhưng không bị tính thiếu. "
+        "`VSF.Location` được lấy tự động từ tầng/vị trí IFC khi property chưa có."
+    )
     source = st.session_state.cleaned_objects or _objects_with_blank_asset_fields(st.session_state.objects)
     if not source:
-        st.info("No BIM objects available.")
+        st.info("Chưa có object BIM. Hãy nạp và đọc file IFC ở bước 2.")
         return
 
     profile_names = get_profile_names()
     st.session_state.selected_profile = st.selectbox(
-        "Field Policy Profile",
+        "Bộ yêu cầu dữ liệu",
         profile_names,
         index=profile_names.index(st.session_state.selected_profile)
         if st.session_state.selected_profile in profile_names
@@ -659,38 +798,46 @@ def render_validate_tab() -> None:
     profile = get_profile(st.session_state.selected_profile)
     st.caption(profile["description"])
 
-    with st.expander("Field policy for selected profile"):
+    with st.expander("Xem các trường bắt buộc và phạm vi áp dụng"):
         st.dataframe(
             pd.DataFrame(get_policy_rows(st.session_state.selected_profile)),
             use_container_width=True,
             hide_index=True,
         )
 
-    if st.button("Run Validation"):
+    action_col1, action_col2 = st.columns(2)
+    with action_col1:
+        apply_clean = st.button(
+            "1. Phân loại vận hành & map 10 trường",
+            type="primary",
+            help=(
+                "Tách context khỏi maintainable/realtime/scope_review, đọc property EMSD/VSF "
+                "và map vị trí IFC vào VSF.Location."
+            ),
+        )
+    with action_col2:
+        run_validation = st.button(
+            "2. Kiểm tra trường còn thiếu",
+            help="Mỗi object được kiểm tra đúng 10 trường, không kiểm tra thêm trường O&M khác.",
+        )
+
+    if run_validation:
         st.session_state.processing_status = "Validating"
         validation_df, summary = validate_assets(source, st.session_state.selected_profile)
         st.session_state.validation_df = validation_df
         st.session_state.validation_summary = summary
-        st.success("Validation completed.")
+        st.session_state.validated_snapshot_path = ""
+        st.session_state.validated_snapshot_name = ""
+        st.success("Đã kiểm tra đủ/thiếu cho 10 trường EMSD/VSF.")
 
-    summary = st.session_state.validation_summary
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Errors", summary.get("total_errors", 0))
-    c2.metric("High", summary.get("High", 0))
-    c3.metric("Medium", summary.get("Medium", 0))
-    c4.metric("Low", summary.get("Low", 0))
-
-    if not st.session_state.validation_df.empty:
-        st.dataframe(st.session_state.validation_df, use_container_width=True, hide_index=True)
-    else:
-        st.info("No validation errors yet. Run validation to refresh.")
-
-    if st.button("Apply Basic Clean", type="primary"):
+    if apply_clean:
         st.session_state.cleaned_objects = apply_basic_clean(
             _objects_with_blank_asset_fields(st.session_state.objects),
             st.session_state.project_id,
         )
         st.session_state.preview_tables = {}
+        st.session_state.validated_snapshot_path = ""
+        st.session_state.validated_snapshot_name = ""
         st.session_state.processing_status = "Ready for Preview"
         validation_df, summary = validate_assets(
             st.session_state.cleaned_objects,
@@ -698,23 +845,75 @@ def render_validate_tab() -> None:
         )
         st.session_state.validation_df = validation_df
         st.session_state.validation_summary = summary
-        st.success("Basic clean applied: generated asset_id, status, classification, system, and floor defaults where possible.")
+        st.success("Đã tách object vận hành khỏi bối cảnh 3D và map 10 trường EMSD/VSF.")
+
+    summary = st.session_state.validation_summary
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Tổng object", summary.get("total_objects", len(source)))
+    c2.metric("Không thuộc vận hành", summary.get("context_objects", 0))
+    c3.metric(
+        "Asset vận hành",
+        summary.get("maintainable_assets", 0) + summary.get("realtime_assets", 0),
+    )
+    c4.metric("Cần xác nhận phạm vi", summary.get("scope_review_objects", 0))
+
+    e1, e2, e3, e4 = st.columns(4)
+    missing_by_field = summary.get("missing_by_field", {})
+    e1.metric("Đủ 10 trường", summary.get("complete_objects", 0))
+    e2.metric("Object đang thiếu", summary.get("incomplete_objects", 0))
+    e3.metric("Tổng ô còn thiếu", summary.get("total_errors", 0))
+    e4.metric("Thiếu VSF Document", missing_by_field.get("VSF.Document", 0))
+
+    if not st.session_state.validation_df.empty:
+        validation_df = st.session_state.validation_df
+        severity_options = ["High", "Medium", "Low"]
+        selected_severities = st.multiselect(
+            "Lọc theo mức độ",
+            severity_options,
+            default=severity_options,
+            help="Các trường thiếu được đánh dấu Medium cho đến khi được bổ sung.",
+        )
+        st.dataframe(
+            validation_df[validation_df["severity"].isin(selected_severities)],
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.success("Không còn vấn đề dữ liệu theo bộ yêu cầu đang chọn.")
+
+    with st.expander("10 trường được kiểm tra và cách nhập"):
+        st.markdown(
+            """
+- `EMSD.Common.Asset Code`
+- `EMSD.Common.Asset Tag No.`
+- `EMSD.Common.Manufacturer`
+- `VSF.Common.Asset Code`
+- `VSF.Common.Asset Tag No.`
+- `VSF.Common.Manufacturer`
+- `VSF.Location`: tự map từ vị trí/tầng IFC, người dùng có thể sửa.
+- `VSF.Link`: nhập liên kết hoặc mã tham chiếu.
+- `VSF.Status`: nhập trạng thái như `Active`, `Inactive`, `Pending`.
+- `VSF.Document`: nhập URL hoặc mã tài liệu.
+            """
+        )
 
     st.divider()
     render_correction_template_tools()
+    st.divider()
+    render_bms_device_import_tools()
 
 
 def render_correction_template_tools() -> None:
-    st.subheader("Correction Template")
+    st.subheader("Bổ sung dữ liệu hàng loạt")
     st.caption(
-        "Export missing required fields as one row per object, let users fill CSV/Excel in bulk, "
-        "then import and merge by GlobalId or Asset ID."
+        "Xuất một dòng cho mỗi asset cần xử lý, điền các cột còn thiếu rồi nhập lại. "
+        "Hệ thống ghép chính xác theo IFC GlobalId."
     )
 
     source = st.session_state.cleaned_objects or _objects_with_blank_asset_fields(st.session_state.objects)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Export Correction Template"):
+        if st.button("3. Tạo file yêu cầu bổ sung"):
             template_df = build_correction_template(source, st.session_state.selected_profile)
             st.session_state.correction_template_df = template_df
             csv_path, excel_path = export_correction_template(
@@ -723,16 +922,16 @@ def render_correction_template_tools() -> None:
                 st.session_state.project_id,
             )
             st.success(
-                f"Exported {len(template_df)} correction rows: "
+                f"Đã tạo {len(template_df)} dòng cần bổ sung: "
                 f"{csv_path.name}, {excel_path.name}"
             )
     with col2:
         uploaded_correction = st.file_uploader(
-            "Import filled correction template",
+            "Chọn file CSV/Excel đã điền",
             type=["csv", "xlsx", "xls"],
             key="correction_template_upload",
         )
-        if uploaded_correction is not None and st.button("Merge Correction Template"):
+        if uploaded_correction is not None and st.button("4. Nhập dữ liệu và kiểm tra lại"):
             try:
                 correction_df = load_correction_file(uploaded_correction)
                 merged, log_df = merge_correction_template(
@@ -743,6 +942,8 @@ def render_correction_template_tools() -> None:
                 st.session_state.cleaned_objects = merged
                 st.session_state.correction_log_df = log_df
                 st.session_state.preview_tables = {}
+                st.session_state.validated_snapshot_path = ""
+                st.session_state.validated_snapshot_name = ""
                 validation_df, summary = validate_assets(
                     merged,
                     st.session_state.selected_profile,
@@ -750,22 +951,27 @@ def render_correction_template_tools() -> None:
                 st.session_state.validation_df = validation_df
                 st.session_state.validation_summary = summary
                 st.success(
-                    f"Merged correction template. Updated {len(log_df)} objects; "
-                    "validation refreshed."
+                    f"Đã cập nhật {len(log_df)} object và chạy lại validation."
                 )
             except Exception as exc:
-                st.error(f"Cannot import correction template: {exc}")
+                st.error(f"Không thể nhập file bổ sung: {exc}")
 
     if not st.session_state.correction_template_df.empty:
-        st.write("Latest correction template preview")
+        st.write("Xem trước file cần bổ sung")
         st.dataframe(
             st.session_state.correction_template_df.head(500),
             use_container_width=True,
             hide_index=True,
         )
+        st.download_button(
+            "Tải file CSV để điền",
+            st.session_state.correction_template_df.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"{st.session_state.project_id}_correction_template.csv",
+            mime="text/csv",
+        )
 
     if not st.session_state.correction_log_df.empty:
-        st.write("Latest correction merge log")
+        st.write("Nhật ký các trường vừa cập nhật")
         st.dataframe(
             st.session_state.correction_log_df,
             use_container_width=True,
@@ -790,20 +996,68 @@ def render_map_tab() -> None:
 
 
 def render_preview_tab() -> None:
-    st.subheader("Preview Normalized Digital Twin Tables")
+    st.subheader("Xem trước dữ liệu Digital Twin")
+    st.caption(
+        "Snapshot giữ toàn bộ object để liên kết với mô hình 3D và chỉ hiển thị đúng 10 trường EMSD/VSF "
+        "trong Normalized O&M."
+    )
     if not st.session_state.cleaned_objects:
-        st.info("Apply Basic Clean before preview.")
+        st.info("Hãy hoàn thành bước Chuẩn hóa và phân loại phạm vi trước khi xem dữ liệu.")
         return
 
-    if st.button("Build Preview", type="primary"):
+    if st.button("Tạo snapshot validation", type="primary"):
         assets = build_asset_master(st.session_state.cleaned_objects)
         st.session_state.preview_tables = build_preview_tables(assets)
+        source_file = st.session_state.upload_info.get("file_name", "")
+        snapshot = build_validated_twin_snapshot(
+            st.session_state.preview_tables,
+            st.session_state.validation_df,
+            project_id=st.session_state.project_id,
+            project_name=st.session_state.project_name,
+            source_file=source_file,
+            validation_profile=st.session_state.selected_profile,
+            validation_summary=st.session_state.validation_summary,
+            compliance_summary=st.session_state.ifc_compliance_summary,
+        )
+        snapshot_path = write_validated_twin_snapshot(snapshot, OUTPUT_DIR, st.session_state.project_id)
+        st.session_state.validated_snapshot_path = str(snapshot_path)
+        st.session_state.validated_snapshot_name = snapshot_path.name
         st.session_state.processing_status = "Ready for Preview"
-        st.success("Preview tables are ready.")
+        st.success(f"Đã tạo snapshot: {snapshot_path.name}")
 
     tables = st.session_state.preview_tables
     if not tables:
         return
+
+    snapshot_name = st.session_state.validated_snapshot_name
+    active_source_name = st.session_state.upload_info.get("file_name", "")
+    aps_matches_source = (
+        st.session_state.aps_viewer_ready
+        and st.session_state.aps_translation_urn
+        and st.session_state.aps_source_name == active_source_name
+    )
+    if snapshot_name and aps_matches_source:
+        viewer_base_url = os.getenv("DIGITAL_TWIN_VIEWER_URL", "http://127.0.0.1:5173").rstrip("/")
+        viewer_query = urlencode(
+            {
+                "urn": st.session_state.aps_translation_urn,
+                "name": active_source_name,
+                "dataset": snapshot_name,
+            }
+        )
+        st.link_button(
+            "Mở mô hình 3D kèm kết quả validation",
+            f"{viewer_base_url}/aps-viewer?{viewer_query}",
+            type="primary",
+            help="Mở APS Viewer và ghép object theo IFC GlobalId với dữ liệu O&M đã validation.",
+        )
+    elif snapshot_name and st.session_state.aps_viewer_ready:
+        st.warning(
+            "The APS viewable belongs to a different source file. Build an APS viewable for the active IFC "
+            "before opening the validated view."
+        )
+    elif snapshot_name:
+        st.info("Build the active IFC in the APS Viewer tab to enable the validated 3D view.")
 
     tabs = st.tabs(["Asset Master", "Location Master", "System Master", "Property Detail"])
     table_keys = ["assets", "locations", "systems", "properties"]
@@ -811,8 +1065,90 @@ def render_preview_tab() -> None:
         with tab:
             df = pd.DataFrame(tables.get(key, []))
             if key == "assets" and not df.empty:
-                df = df.drop(columns=["technical_properties", "quantity_properties", "source_reference", "raw_metadata"], errors="ignore")
+                df = df.drop(
+                    columns=["technical_properties", "quantity_properties", "source_reference", "raw_metadata"],
+                    errors="ignore",
+                )
             st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def render_bms_device_import_tools() -> None:
+    st.subheader("Map BMS Device Register theo AssetCode")
+    st.caption(
+        "Import CSV/XLSX từ BMS. Hệ thống đối chiếu AssetCode với EMSD.Common.Asset Code "
+        "và VSF.Common.Asset Code, sau đó cập nhật Device ID, tên, status, tầng, phòng, "
+        "location, link, document và manufacturer."
+    )
+
+    mock_path = BASE_DIR / "sample-data" / "bms-device-register-mock.csv"
+    if mock_path.exists():
+        st.download_button(
+            "Tải file BMS mock để thử",
+            mock_path.read_bytes(),
+            file_name=mock_path.name,
+            mime="text/csv",
+        )
+
+    uploaded_bms = st.file_uploader(
+        "Chọn BMS Device Register",
+        type=["csv", "xlsx", "xls"],
+        key="bms_device_register_upload",
+        help="Bắt buộc có AssetCode. Các cột còn lại có thể để trống nếu BMS chưa cung cấp.",
+    )
+    if uploaded_bms is not None:
+        try:
+            st.session_state.bms_device_df = load_bms_device_file(uploaded_bms)
+        except Exception as exc:
+            st.error(f"Không thể đọc BMS Device Register: {exc}")
+
+    if not st.session_state.bms_device_df.empty:
+        st.write("Xem trước dữ liệu BMS")
+        st.dataframe(
+            st.session_state.bms_device_df.head(500),
+            use_container_width=True,
+            hide_index=True,
+        )
+        if st.button("Map BMS vào object theo AssetCode", type="primary"):
+            source = st.session_state.cleaned_objects or _objects_with_blank_asset_fields(st.session_state.objects)
+            if not source:
+                st.warning("Hãy nạp IFC và chạy Phân loại vận hành & map 10 trường trước.")
+            else:
+                merged, log_df, mapping_summary = merge_bms_devices(
+                    source,
+                    st.session_state.bms_device_df,
+                )
+                st.session_state.cleaned_objects = merged
+                st.session_state.bms_mapping_log_df = log_df
+                st.session_state.bms_mapping_summary = mapping_summary
+                st.session_state.preview_tables = {}
+                st.session_state.validated_snapshot_path = ""
+                st.session_state.validated_snapshot_name = ""
+                validation_df, summary = validate_assets(
+                    merged,
+                    st.session_state.selected_profile,
+                )
+                st.session_state.validation_df = validation_df
+                st.session_state.validation_summary = summary
+                st.success(
+                    f"Đã map {mapping_summary['matched_rows']}/{mapping_summary['bms_rows']} dòng BMS "
+                    f"vào {mapping_summary['matched_objects']} object IFC."
+                )
+
+    mapping_summary = st.session_state.bms_mapping_summary
+    if mapping_summary:
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Dòng BMS", mapping_summary.get("bms_rows", 0))
+        m2.metric("Dòng khớp", mapping_summary.get("matched_rows", 0))
+        m3.metric("Không khớp", mapping_summary.get("unmatched_rows", 0))
+        m4.metric("Object cập nhật", mapping_summary.get("matched_objects", 0))
+
+    if not st.session_state.bms_mapping_log_df.empty:
+        st.write("Kết quả đối chiếu AssetCode")
+        st.dataframe(
+            st.session_state.bms_mapping_log_df,
+            use_container_width=True,
+            hide_index=True,
+        )
 
 
 def render_import_export_tab() -> None:
@@ -981,7 +1317,12 @@ def load_ifc_into_session(file_path: str | Path, file_name: str, upload_time: st
     st.session_state.cleaned_objects = []
     st.session_state.correction_template_df = pd.DataFrame()
     st.session_state.correction_log_df = pd.DataFrame()
+    st.session_state.bms_device_df = pd.DataFrame()
+    st.session_state.bms_mapping_log_df = pd.DataFrame()
+    st.session_state.bms_mapping_summary = {}
     st.session_state.preview_tables = {}
+    st.session_state.validated_snapshot_path = ""
+    st.session_state.validated_snapshot_name = ""
     st.session_state.ifc_summary = summary
     st.session_state.last_error = ""
     st.success(f"Loaded {len(objects)} BIM objects from {file_name}.")

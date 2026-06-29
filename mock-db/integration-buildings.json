@@ -1,0 +1,112 @@
+[
+  {
+    "id": "bldg-marriott-equipment",
+    "code": "MARRIOTT-EQP",
+    "name": "Marriott Equipment Demo",
+    "latitude": 21.0278,
+    "longitude": 105.8342,
+    "address": "Demo campus, Hanoi",
+    "ifcFile": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+    "sourceSystem": "mock-json",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [105.83392, 21.02762],
+          [105.83452, 21.02762],
+          [105.83452, 21.02804],
+          [105.83392, 21.02804],
+          [105.83392, 21.02762]
+        ]
+      ]
+    }
+  },
+  {
+    "id": "bldg-nha-1",
+    "code": "NHA-1",
+    "name": "Nha 1",
+    "latitude": 21.02845,
+    "longitude": 105.83355,
+    "address": "Demo campus, Hanoi",
+    "ifcFile": "Nha1.ifc",
+    "sourceSystem": "mock-json",
+    "geometry": null
+  },
+  {
+    "id": "bldg-nha-2",
+    "code": "NHA-2",
+    "name": "Nha 2",
+    "latitude": 21.02905,
+    "longitude": 105.83308,
+    "address": "Demo campus, Hanoi",
+    "ifcFile": "Nha2.ifc",
+    "sourceSystem": "mock-json",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [105.83286, 21.0289],
+          [105.8333, 21.0289],
+          [105.8333, 21.0292],
+          [105.83286, 21.0292],
+          [105.83286, 21.0289]
+        ]
+      ]
+    }
+  },
+  {
+    "id": "bldg-admin",
+    "code": "ADMIN",
+    "name": "Administration Block",
+    "latitude": 21.02728,
+    "longitude": 105.83336,
+    "address": "Demo campus, Hanoi",
+    "ifcFile": "",
+    "sourceSystem": "mock-json",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [105.83317, 21.02712],
+          [105.83354, 21.02712],
+          [105.83354, 21.02743],
+          [105.83317, 21.02743],
+          [105.83317, 21.02712]
+        ]
+      ]
+    }
+  },
+  {
+    "id": "bldg-utility-yard",
+    "code": "UTIL-YARD",
+    "name": "Utility Yard",
+    "latitude": 21.02802,
+    "longitude": 105.83512,
+    "address": "Demo campus, Hanoi",
+    "ifcFile": "",
+    "sourceSystem": "mock-json",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [105.83492, 21.02786],
+          [105.83531, 21.02786],
+          [105.83531, 21.02818],
+          [105.83492, 21.02818],
+          [105.83492, 21.02786]
+        ]
+      ]
+    }
+  },
+  {
+    "id": "bldg-gatehouse",
+    "code": "GATE",
+    "name": "Gatehouse",
+    "latitude": 21.02744,
+    "longitude": 105.83402,
+    "address": "Demo campus, Hanoi",
+    "ifcFile": "",
+    "sourceSystem": "mock-json",
+    "geometry": null
+  }
+]

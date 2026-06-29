@@ -1,0 +1,106 @@
+[
+  {
+    "ifcGuid": "0MQTTcamdome0100000000",
+    "ifcFileId": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+    "objectName": "Level 9 Dome Camera 01",
+    "objectType": "IfcFlowTerminal",
+    "assetCode": "CAM-L09-001",
+    "sourceSystem": "ifc-parser-sample",
+    "properties": {
+      "Pset_Asset": {
+        "AssetCode": "CAM-L09-001",
+        "Category": "Camera"
+      },
+      "Location": {
+        "Floor": "Level 9",
+        "Room": "North Corridor"
+      }
+    }
+  },
+  {
+    "ifcGuid": "0MQTTahu01000000000000",
+    "ifcFileId": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+    "objectName": "Level 9 Air Handling Unit 01",
+    "objectType": "IfcUnitaryEquipment",
+    "assetCode": "AHU-L09-001",
+    "sourceSystem": "ifc-parser-sample",
+    "properties": {
+      "Pset_Asset": {
+        "AssetCode": "AHU-L09-001",
+        "Category": "AHU"
+      },
+      "Location": {
+        "Floor": "Level 9",
+        "Room": "Mechanical Area"
+      }
+    }
+  },
+  {
+    "ifcGuid": "0MQTTlight010000000000",
+    "ifcFileId": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+    "objectName": "Level 9 Circular Light 01",
+    "objectType": "IfcLightFixture",
+    "assetCode": "LGT-L09-001",
+    "sourceSystem": "ifc-parser-sample",
+    "properties": {
+      "Pset_Asset": {
+        "AssetCode": "LGT-L09-001",
+        "Category": "Light"
+      },
+      "Location": {
+        "Floor": "Level 9",
+        "Room": "North Corridor"
+      }
+    }
+  },
+  {
+    "ifcGuid": "0MQTTcamdome0200000000",
+    "ifcFileId": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+    "objectName": "Level 9 Dome Camera 02",
+    "objectType": "IfcFlowTerminal",
+    "assetCode": "CAM-L09-002",
+    "sourceSystem": "ifc-parser-sample",
+    "properties": {
+      "Pset_Asset": {
+        "AssetCode": "CAM-L09-002",
+        "Category": "Camera"
+      },
+      "Location": {
+        "Floor": "Level 9",
+        "Room": "North Corridor"
+      }
+    }
+  },
+  {
+    "ifcGuid": "0MQTTpump0100000000000",
+    "ifcFileId": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+    "objectName": "Level 9 Booster Pump 01",
+    "objectType": "IfcPump",
+    "assetCode": "PMP-L09-001",
+    "sourceSystem": "ifc-parser-sample",
+    "properties": {
+      "Pset_Asset": {
+        "AssetCode": "PMP-L09-001",
+        "Category": "Pump"
+      },
+      "Location": {
+        "Floor": "Level 9",
+        "Room": "Mechanical Area"
+      }
+    }
+  },
+  {
+    "ifcGuid": "0UNMATCHEDifcobject0001",
+    "ifcFileId": "20260609_173819_MARRIOTT_DSC_ARC_R24_with_equipment.ifc",
+    "objectName": "Unregistered Exhaust Fan",
+    "objectType": "IfcFan",
+    "assetCode": "FAN-L09-UNREGISTERED",
+    "sourceSystem": "ifc-parser-sample",
+    "properties": {
+      "Pset_Asset": {
+        "AssetCode": "FAN-L09-UNREGISTERED",
+        "Category": "Fan"
+      }
+    }
+  }
+]

@@ -5,43 +5,39 @@ from typing import Any
 
 import pandas as pd
 
-from rules.field_policy import get_template_fields, get_validated_fields
+from rules.om_field_rules import OM_FIELD_NAMES, missing_om_fields
+from rules.operational_scope import classify_operational_scope
+
 
 IDENTITY_COLUMNS = [
     "source_global_id",
-    "ifc_guid",
     "object_name",
     "source_ifc_class",
-    "object_type",
     "source_file",
     "missing_required_fields",
 ]
 
 
-def build_correction_template(objects: list[dict], profile_name: str) -> pd.DataFrame:
-    required_fields = get_validated_fields(profile_name)
-    template_fields = get_template_fields(profile_name)
+def build_correction_template(objects: list[dict], profile_name: str = "vsf_om_10") -> pd.DataFrame:
     rows = []
-
     for obj in objects:
-        missing = [field for field in required_fields if not obj.get(field)]
+        scope = str(obj.get("operational_scope") or classify_operational_scope(obj)["operational_scope"])
+        if scope == "context":
+            continue
+        missing = missing_om_fields(obj)
         if not missing:
             continue
-
         row = {
             "source_global_id": obj.get("global_id") or obj.get("source_global_id", ""),
-            "ifc_guid": obj.get("global_id") or obj.get("source_global_id", ""),
             "object_name": obj.get("asset_name") or obj.get("name", ""),
             "source_ifc_class": obj.get("ifc_class", ""),
-            "object_type": obj.get("object_type", ""),
+            "operational_scope": scope,
             "source_file": obj.get("source_file", ""),
             "missing_required_fields": ", ".join(missing),
         }
-        for field in template_fields:
-            row[field] = obj.get(field, "")
+        row.update({field: obj.get(field, "") for field in OM_FIELD_NAMES})
         rows.append(row)
-
-    return pd.DataFrame(rows, columns=IDENTITY_COLUMNS + template_fields)
+    return pd.DataFrame(rows, columns=IDENTITY_COLUMNS + ["operational_scope"] + OM_FIELD_NAMES)
 
 
 def export_correction_template(
@@ -65,46 +61,48 @@ def load_correction_file(uploaded_file: Any) -> pd.DataFrame:
         return pd.read_csv(uploaded_file).fillna("")
     if file_name.endswith((".xlsx", ".xls")):
         return pd.read_excel(uploaded_file).fillna("")
-    raise ValueError("Correction template must be a CSV or Excel file.")
+    raise ValueError("File bổ sung phải là CSV hoặc Excel.")
 
 
 def merge_correction_template(
     objects: list[dict],
     correction_df: pd.DataFrame,
-    profile_name: str,
+    profile_name: str = "vsf_om_10",
 ) -> tuple[list[dict], pd.DataFrame]:
-    template_fields = set(get_template_fields(profile_name))
-    editable_fields = [field for field in correction_df.columns if field in template_fields]
+    editable_fields = [field for field in OM_FIELD_NAMES if field in correction_df.columns]
     corrections = _index_corrections(correction_df)
-
     merged = []
-    log_rows = []
+    logs = []
+
     for obj in objects:
         item = obj.copy()
-        keys = [
-            item.get("global_id", ""),
-            item.get("source_global_id", ""),
-            item.get("asset_id", ""),
-        ]
-        correction = next((corrections[key] for key in keys if key in corrections), None)
-        if correction is None:
+        key = str(item.get("global_id") or item.get("source_global_id") or "").strip()
+        correction = corrections.get(key)
+        if not correction:
             merged.append(item)
             continue
 
         changed_fields = []
+        field_sources = dict(item.get("om_field_sources") or {})
+        requested_scope = str(correction.get("operational_scope") or "").strip()
+        if requested_scope in {"context", "maintainable", "realtime", "scope_review"}:
+            if requested_scope != item.get("operational_scope"):
+                item["operational_scope"] = requested_scope
+                item["operational_scope_source"] = "manual_correction"
+                item["operational_scope_reason"] = "Phạm vi do người dùng xác nhận qua correction template"
+                changed_fields.append("operational_scope")
         for field in editable_fields:
             value = correction.get(field, "")
-            if _has_value(value):
-                old_value = item.get(field, "")
+            if _has_value(value) and item.get(field) != value:
                 item[field] = value
-                if old_value != value:
-                    changed_fields.append(field)
+                field_sources[field] = "manual_correction"
+                changed_fields.append(field)
+        item["om_field_sources"] = field_sources
 
         if changed_fields:
-            log_rows.append(
+            logs.append(
                 {
-                    "source_global_id": item.get("global_id") or item.get("source_global_id", ""),
-                    "asset_id": item.get("asset_id", ""),
+                    "source_global_id": key,
                     "object_name": item.get("asset_name") or item.get("name", ""),
                     "changed_fields": ", ".join(changed_fields),
                     "changed_count": len(changed_fields),
@@ -112,16 +110,15 @@ def merge_correction_template(
             )
         merged.append(item)
 
-    return merged, pd.DataFrame(log_rows)
+    return merged, pd.DataFrame(logs)
 
 
 def _index_corrections(correction_df: pd.DataFrame) -> dict[str, dict]:
     indexed = {}
     for row in correction_df.to_dict(orient="records"):
-        for key_field in ["source_global_id", "ifc_guid", "asset_id"]:
-            value = str(row.get(key_field, "")).strip()
-            if value:
-                indexed[value] = row
+        value = str(row.get("source_global_id", "")).strip()
+        if value:
+            indexed[value] = row
     return indexed
 
 
@@ -130,4 +127,4 @@ def _has_value(value: Any) -> bool:
         return False
     if isinstance(value, float) and pd.isna(value):
         return False
-    return str(value).strip() != ""
+    return bool(str(value).strip())

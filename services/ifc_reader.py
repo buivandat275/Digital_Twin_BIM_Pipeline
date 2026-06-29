@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from rules.classification_rules import classify_ifc_class, normalize_floor
+from rules.om_field_rules import extract_om_fields
 from services.metadata_extractor import extract_property_sets, split_metadata
 
 
@@ -85,6 +86,7 @@ def parse_ifc_file(file_path: str | Path, source_file: str) -> tuple[list[dict],
         containers = _container_names(element)
         building = containers["building"] or building_name
         location = containers["location"] or building
+        om_fields, om_field_sources = extract_om_fields(property_sets, location)
 
         rows.append(
             {
@@ -156,6 +158,8 @@ def parse_ifc_file(file_path: str | Path, source_file: str) -> tuple[list[dict],
                 "history_enabled": _lookup_any_property(property_sets, ["DT.Common.History Enabled", "History Enabled"]),
                 "point_template": _lookup_any_property(property_sets, ["DT.Common.Point Template", "Point Template"]),
                 "status": _lookup_property(property_sets, "Status"),
+                **om_fields,
+                "om_field_sources": om_field_sources,
             }
         )
 

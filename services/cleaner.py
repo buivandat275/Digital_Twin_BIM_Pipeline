@@ -9,6 +9,7 @@ from rules.classification_rules import (
     classify_ifc_class,
     normalize_floor,
 )
+from rules.operational_scope import classify_operational_scope, is_operational_scope
 
 
 def apply_basic_clean(objects: list[dict], project_code: str) -> list[dict]:
@@ -17,6 +18,7 @@ def apply_basic_clean(objects: list[dict], project_code: str) -> list[dict]:
 
     for obj in objects:
         item = obj.copy()
+        original = obj.copy()
         classification = classify_ifc_class(item.get("ifc_class", ""))
         item["asset_name"] = item.get("asset_name") or item.get("name") or "Unnamed Asset"
         item["asset_type"] = item.get("asset_type") or classification["asset_type"]
@@ -26,12 +28,19 @@ def apply_basic_clean(objects: list[dict], project_code: str) -> list[dict]:
         floor = normalize_floor(item.get("floor", ""))
         item["floor"] = floor if not _is_blankish(floor) else "UNK"
         item["status"] = item.get("status") or "Active"
-        item["criticality"] = item.get("criticality") or "Medium"
-        item["maintainable"] = item.get("maintainable") or _default_maintainable(item)
+        scope = classify_operational_scope(item)
+        item.update(scope)
+        item["criticality"] = item.get("criticality") or (
+            "Medium" if is_operational_scope(item["operational_scope"]) else ""
+        )
+        item["maintainable"] = item.get("maintainable") or (
+            "Yes" if is_operational_scope(item["operational_scope"]) else "No"
+        )
         item["maintenance_strategy"] = item.get("maintenance_strategy") or _default_maintenance_strategy(item)
         item["expected_life_years"] = item.get("expected_life_years") or _default_expected_life(item)
         item["review_status"] = item.get("review_status") or "Pending"
         item["mapping_status"] = item.get("mapping_status") or "Pending"
+        item["commissioning_status"] = item.get("commissioning_status") or "Not Started"
         item["source_global_id"] = item.get("source_global_id") or item.get("global_id", "")
         item["ifc_guid"] = item.get("ifc_guid") or item.get("global_id", "")
         item["location"] = _clean_location(item)
@@ -43,7 +52,7 @@ def apply_basic_clean(objects: list[dict], project_code: str) -> list[dict]:
             f"CMMS-{item['asset_id']}" if item.get("maintainable") == "Yes" else ""
         )
         item["spare_part_group"] = item.get("spare_part_group") or _default_spare_part_group(item)
-        if _default_realtime_enabled(item):
+        if item["operational_scope"] == "realtime":
             item["realtime_enabled"] = item.get("realtime_enabled") or "Yes"
             item["history_enabled"] = item.get("history_enabled") or "Yes"
             item["protocol"] = item.get("protocol") or _default_protocol(item)
@@ -55,6 +64,40 @@ def apply_basic_clean(objects: list[dict], project_code: str) -> list[dict]:
             item["realtime_enabled"] = item.get("realtime_enabled") or "No"
             item["history_enabled"] = item.get("history_enabled") or "No"
 
+        tracked_fields = {
+            "asset_name",
+            "asset_type",
+            "system",
+            "system_code",
+            "floor",
+            "location",
+            "status",
+            "criticality",
+            "maintainable",
+            "maintenance_strategy",
+            "expected_life_years",
+            "asset_id",
+            "dt_asset_code",
+            "cmms_asset_id",
+            "spare_part_group",
+            "realtime_enabled",
+            "history_enabled",
+            "protocol",
+            "gateway_id",
+            "device_id",
+            "polling_interval_sec",
+            "point_template",
+            "review_status",
+            "mapping_status",
+            "commissioning_status",
+        }
+        generated_fields = set(item.get("generated_fields") or [])
+        generated_fields.update(
+            field
+            for field in tracked_fields
+            if _is_blankish(original.get(field)) and not _is_blankish(item.get(field))
+        )
+        item["generated_fields"] = sorted(generated_fields)
         cleaned.append(item)
     return cleaned
 
@@ -98,9 +141,7 @@ def _clean_code(value: object, fallback: str) -> str:
 
 
 def _default_maintainable(obj: dict) -> str:
-    if obj.get("ifc_class") in {"IfcSpace", "IfcGrid"}:
-        return "No"
-    return "Yes"
+    return "Yes" if is_operational_scope(str(obj.get("operational_scope") or "")) else "No"
 
 
 def _default_maintenance_strategy(obj: dict) -> str:
@@ -127,6 +168,9 @@ def _default_spare_part_group(obj: dict) -> str:
 
 
 def _default_realtime_enabled(obj: dict) -> bool:
+    scope = str(obj.get("operational_scope") or "")
+    if scope:
+        return scope == "realtime"
     if obj.get("maintainable") != "Yes":
         return False
     if str(obj.get("realtime_enabled", "")).strip().lower() in {"yes", "true", "1"}:

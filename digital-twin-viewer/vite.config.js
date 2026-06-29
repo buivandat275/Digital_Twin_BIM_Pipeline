@@ -19,6 +19,18 @@ const fragmentsWorkerPath = path.join(
   "Worker",
   "worker.min.mjs",
 );
+const OM_FIELD_NAMES = [
+  "EMSD.Common.Asset Code",
+  "EMSD.Common.Asset Tag No.",
+  "EMSD.Common.Manufacturer",
+  "VSF.Common.Asset Code",
+  "VSF.Common.Asset Tag No.",
+  "VSF.Common.Manufacturer",
+  "VSF.Location",
+  "VSF.Link",
+  "VSF.Status",
+  "VSF.Document",
+];
 
 function readJson(filePath, fallback) {
   try {
@@ -111,9 +123,117 @@ function safeFilePath(baseDir, requestedName) {
   return resolved;
 }
 
+function missingOmFields(asset) {
+  const values = asset?.normalizedProperties || {};
+  return OM_FIELD_NAMES.filter((field) => !String(values[field] ?? "").trim());
+}
+
+function buildOmValidationIssues(asset) {
+  if (asset?.operationalScope === "context") return [];
+  return missingOmFields(asset).map((field) => ({
+    global_id: asset.ifcGuid || "",
+    object_name: asset.name || "",
+    ifc_class: asset.sourceReference?.ifc_class || "",
+    field,
+    error_type: `Thiếu ${field}`,
+    severity: "Medium",
+    suggested_fix: `Nhập ${field} trực tiếp trên màn hình hoặc qua correction template.`,
+    profile: "vsf_om_10",
+  }));
+}
+
+function recalculateSnapshotSummary(snapshot) {
+  const assets = Array.isArray(snapshot.assets) ? snapshot.assets : [];
+  const missingByField = Object.fromEntries(OM_FIELD_NAMES.map((field) => [field, 0]));
+  let missingFieldCount = 0;
+  let complete = 0;
+  let incomplete = 0;
+  let operationalAssetCount = 0;
+  let scopeReviewCount = 0;
+  let contextCount = 0;
+
+  for (const asset of assets) {
+    const scope = asset.operationalScope || "context";
+    const missing = scope === "context" ? [] : missingOmFields(asset);
+    asset.validationIssues = buildOmValidationIssues(asset);
+    if (scope === "context") {
+      asset.readinessStatus = "Excluded";
+      contextCount += 1;
+    } else if (scope === "scope_review") {
+      asset.readinessStatus = "Scope Review";
+      scopeReviewCount += 1;
+    } else {
+      operationalAssetCount += 1;
+      asset.readinessStatus = missing.length ? "Incomplete" : "Complete";
+      if (missing.length) incomplete += 1;
+      else complete += 1;
+    }
+    missingFieldCount += missing.length;
+    for (const field of missing) missingByField[field] += 1;
+  }
+
+  snapshot.summary = {
+    ...(snapshot.summary || {}),
+    assetCount: assets.length,
+    operationalAssetCount,
+    scopeReviewCount,
+    contextCount,
+    complete,
+    incomplete,
+    missingFieldCount,
+    missingByField,
+    validation: {
+      total_errors: missingFieldCount,
+      High: 0,
+      Medium: missingFieldCount,
+      Low: 0,
+      total_objects: assets.length,
+      checked_objects: operationalAssetCount + scopeReviewCount,
+      context_objects: contextCount,
+      scope_review_objects: scopeReviewCount,
+      complete_objects: complete,
+      incomplete_objects: incomplete + scopeReviewCount,
+      missing_by_field: missingByField,
+    },
+  };
+  snapshot.updatedAt = new Date().toISOString();
+  return snapshot;
+}
+
+function updateValidatedSnapshot(fileName, ifcGuid, values) {
+  const filePath = safeFilePath(outputDir, fileName);
+  if (!filePath || path.extname(filePath).toLowerCase() !== ".json" || !fs.existsSync(filePath)) {
+    throw new Error("Không tìm thấy snapshot validation.");
+  }
+  const snapshot = readJson(filePath, null);
+  if (!snapshot || snapshot.kind !== "validated-digital-twin-snapshot") {
+    throw new Error("File không phải validated Digital Twin snapshot.");
+  }
+  const asset = (snapshot.assets || []).find(
+    (item) => String(item.ifcGuid || "").trim().toLowerCase() === String(ifcGuid || "").trim().toLowerCase(),
+  );
+  if (!asset) throw new Error("Không tìm thấy IFC GlobalId trong snapshot.");
+
+  const existingValues = asset.normalizedProperties || {};
+  asset.normalizedProperties = Object.fromEntries(
+    OM_FIELD_NAMES.map((field) => [field, existingValues[field] || ""]),
+  );
+  asset.fieldSources = { ...(asset.fieldSources || {}) };
+  for (const field of OM_FIELD_NAMES) {
+    if (!Object.prototype.hasOwnProperty.call(values || {}, field)) continue;
+    asset.normalizedProperties[field] = String(values[field] ?? "").trim();
+    asset.fieldSources[field] = "manual_viewer";
+  }
+
+  recalculateSnapshotSummary(snapshot);
+  fs.writeFileSync(filePath, JSON.stringify(snapshot, null, 2), "utf8");
+  return { asset, summary: snapshot.summary, updatedAt: snapshot.updatedAt };
+}
+
 function normalizeText(value = "") {
   return String(value)
     .toLowerCase()
+    .replace(/[đð]/g, "d")
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .replace(/đ/g, "d")
@@ -145,7 +265,13 @@ function detectAssetType(normalizedQuery) {
 }
 
 function detectStatus(normalizedQuery) {
-  if (/(offline|mat ket noi|mat tin hieu|khong gui|khong co tin hieu)/.test(normalizedQuery)) return "Offline";
+  if (
+    /(offline|mat ket noi|mat tin hieu|khong gui|khong co tin hieu|khong thay hinh|khong co hinh|man hinh den|mat hinh|mat video|khong co video|no image|black screen|no video|no stream)/.test(
+      normalizedQuery,
+    )
+  ) {
+    return "Offline";
+  }
   if (/(fault|loi|hong|bi hong|gap su co|su co)/.test(normalizedQuery)) return "Fault";
   if (/(warning|canh bao|bat thuong|qua nguong)/.test(normalizedQuery)) return "Warning";
   if (/(normal|binh thuong|on dinh)/.test(normalizedQuery)) return "Normal";
@@ -226,6 +352,37 @@ function extractJsonObject(value = "") {
   const end = probe.lastIndexOf("}");
   if (start < 0 || end < start) throw new Error("LLM did not return JSON");
   return JSON.parse(probe.slice(start, end + 1));
+}
+
+function extractIntegrationIntentFromText(value = "", compactCatalog = {}) {
+  const text = String(value || "");
+  const normalized = normalizeIntentText(text);
+  const parsed = {
+    action: "showResults",
+    assetCode: "",
+    type: "",
+    status: detectStatus(normalized),
+    buildingCode: "",
+    area: "",
+    near: /(gan|quanh|xung quanh|around|near|ban kinh|trong vong)/.test(normalized),
+    radiusMeters: 120,
+    mappingIntent: "",
+    qualityIssue: "",
+    explanation: "Parsed from non-JSON Qwen response.",
+  };
+  const asset = (compactCatalog.assets || []).find((item) => normalized.includes(normalizeIntentText(item.assetCode)));
+  if (asset) parsed.assetCode = asset.assetCode;
+  const type = (compactCatalog.types || []).find((item) => normalized.includes(normalizeIntentText(item)));
+  if (type) parsed.type = type;
+  const building = (compactCatalog.buildings || []).find((item) =>
+    [item.code, item.name].some((entry) => normalized.includes(normalizeIntentText(entry))),
+  );
+  if (building) parsed.buildingCode = building.code;
+  if (/(main gate|gatehouse|entry gate|cong chinh|cong vao|bao ve|gate)/.test(normalized)) parsed.area = "Main Gate";
+  if (!parsed.assetCode && !parsed.type && !parsed.status && !parsed.buildingCode && !parsed.area) {
+    throw new Error("LLM did not return JSON");
+  }
+  return parsed;
 }
 
 function coerceIntent(intent, fallback) {
@@ -350,6 +507,209 @@ async function checkOllamaStatus() {
   }
 }
 
+function cleanObject(value = {}) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null && entry !== ""),
+  );
+}
+
+function coerceIntegrationIntent(intent = {}, fallback = {}) {
+  const fallbackFilters = fallback.filters || {};
+  const nextFilters = {
+    ...fallbackFilters,
+    ...cleanObject(intent.filters || {}),
+  };
+  if (typeof intent.filters?.mappingIssue === "boolean") nextFilters.mappingIssue = intent.filters.mappingIssue;
+  if (typeof intent.filters?.mappingResolved === "boolean") nextFilters.mappingResolved = intent.filters.mappingResolved;
+  if (typeof intent.filters?.problemOnly === "boolean") nextFilters.problemOnly = intent.filters.problemOnly;
+  if (intent.filters?.near && typeof intent.filters.near === "object") nextFilters.near = intent.filters.near;
+  return {
+    ...fallback,
+    source: intent.source || "ollama",
+    action: intent.action || fallback.action || "showResults",
+    query: intent.query || fallback.query || "",
+    targetAssetId: intent.targetAssetId || fallback.targetAssetId || "",
+    targetBuildingId: intent.targetBuildingId || fallback.targetBuildingId || "",
+    filters: nextFilters,
+    explanation: intent.explanation || fallback.explanation || "Parsed by local Qwen.",
+  };
+}
+
+function normalizeIntentText(value = "") {
+  return String(value)
+    .toLowerCase()
+    .replace(/[đð]/g, "d")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveIntegrationIntentFromLlm(parsed = {}, catalog = {}, fallback = {}) {
+  const filters = { ...(fallback.filters || {}) };
+  const buildings = (catalog.buildings || []).filter(Boolean);
+  const assets = (catalog.assets || []).filter(Boolean);
+  const typeOptions = (catalog.typeOptions || []).filter(Boolean);
+  const findBuilding = (value) => {
+    const needle = normalizeIntentText(value);
+    if (!needle) return null;
+    if (/(main gate|gatehouse|entry gate|cong chinh|cong vao|bao ve|gate)/.test(needle)) {
+      const gate = buildings.find((building) =>
+        [building.id, building.code, building.name].some((entry) => /(gate|cong)/.test(normalizeIntentText(entry))),
+      );
+      if (gate) return gate;
+    }
+    return buildings.find((building) =>
+      [building.id, building.code, building.name].some((entry) => normalizeIntentText(entry) === needle || normalizeIntentText(entry).includes(needle)),
+    );
+  };
+  const findAsset = (value) => {
+    const needle = normalizeIntentText(value);
+    if (!needle) return null;
+    return assets.find((asset) =>
+      [asset.id, asset.assetCode, asset.name].some((entry) => normalizeIntentText(entry) === needle || normalizeIntentText(entry).includes(needle)),
+    );
+  };
+  const findType = (value) => {
+    const needle = normalizeIntentText(value);
+    if (!needle) return "";
+    return typeOptions.find((type) => normalizeIntentText(type) === needle || normalizeIntentText(type).includes(needle)) || "";
+  };
+  const inferAsset = ({ building, type }) => {
+    if (!type) return null;
+    const candidates = assets.filter((asset) => {
+      const sameBuilding = building ? asset.buildingId === building.id : true;
+      return sameBuilding && asset.type === type;
+    });
+    return candidates.length === 1 ? candidates[0] : null;
+  };
+
+  const building = findBuilding(parsed.buildingId || parsed.buildingCode || parsed.building || parsed.area);
+  let asset = findAsset(parsed.assetId || parsed.assetCode || parsed.asset);
+  const type = findType(parsed.type || parsed.assetType);
+  if (!asset) asset = inferAsset({ building, type });
+
+  if (type) filters.type = type;
+  if (parsed.status && !filters.status) filters.status = parsed.status;
+  if (parsed.qualityIssue) filters.qualityIssue = parsed.qualityIssue;
+  if (parsed.mappingIntent === "unmapped") {
+    filters.mappingIssue = true;
+    filters.mappingResolved = false;
+  }
+  if (parsed.mappingIntent === "mapped") {
+    filters.mappingIssue = false;
+    filters.mappingResolved = true;
+  }
+  if (building) {
+    if (parsed.near) {
+      filters.buildingId = "";
+      filters.near = {
+        buildingId: building.id,
+        latitude: building.latitude,
+        longitude: building.longitude,
+        radiusMeters: Number(parsed.radiusMeters || fallback.filters?.near?.radiusMeters || 120),
+      };
+    } else {
+      filters.buildingId = building.id;
+    }
+  }
+
+  const isSpatialFallback = Boolean(fallback.filters?.near);
+  const query = isSpatialFallback ? fallback.query || "" : asset?.assetCode || parsed.query || fallback.query || "";
+  return {
+    ...fallback,
+    action: parsed.action || fallback.action || "showResults",
+    query,
+    targetAssetId: isSpatialFallback ? fallback.targetAssetId || "" : asset?.id || fallback.targetAssetId || "",
+    targetBuildingId: building?.id || fallback.targetBuildingId || "",
+    filters,
+    explanation: parsed.explanation || fallback.explanation || "Parsed by local Qwen.",
+  };
+}
+
+async function parseIntegrationWithOllama(query, catalog, fallback) {
+  const env = { ...process.env, ...readEnv(path.join(projectRoot, ".env")) };
+  const model = env.OPERATIONS_LLM_MODEL || "qwen2.5:1.5b";
+  const endpoint = env.OPERATIONS_LLM_URL || "http://127.0.0.1:11434/api/generate";
+  const timeoutMs = Number(env.OPERATIONS_LLM_TIMEOUT_MS || 20000);
+  const buildingById = new Map((catalog.buildings || []).filter(Boolean).map((building) => [building.id, building]));
+  const fallbackFilters = fallback.filters || {};
+  const narrowedAssets = (catalog.assets || []).filter(Boolean).filter((asset) => {
+    if (fallback.targetAssetId && asset.id !== fallback.targetAssetId) return false;
+    if (fallback.query && ![asset.assetCode, asset.name].some((value) => normalizeIntentText(value).includes(normalizeIntentText(fallback.query)))) {
+      return false;
+    }
+    if (!fallback.targetAssetId && !fallback.query && fallbackFilters.type && asset.type !== fallbackFilters.type) return false;
+    if (!fallback.targetAssetId && !fallback.query && fallbackFilters.buildingId && asset.buildingId !== fallbackFilters.buildingId) return false;
+    return true;
+  });
+  const candidateAssets = narrowedAssets.length ? narrowedAssets : (catalog.assets || []).filter(Boolean);
+  const compactCatalog = {
+    buildings: (catalog.buildings || []).filter(Boolean).map((building) => ({
+      code: building.code,
+      name: building.name,
+    })),
+    types: catalog.typeOptions || [],
+    assets: candidateAssets.map((asset) => ({
+      assetCode: asset.assetCode,
+      name: asset.name,
+      type: asset.type,
+      building: buildingById.get(asset.buildingId)?.code || buildingById.get(asset.buildingId)?.name || asset.buildingId,
+      room: asset.room,
+      status: asset.status,
+    })),
+  };
+  const prompt = `Return only one minified JSON object. No markdown. No prose.
+Schema {"action":"showResults","assetCode":"","type":"","status":"","buildingCode":"","area":"","near":false,"radiusMeters":120,"mappingIntent":"","qualityIssue":"","explanation":""}
+Rules khong thay hinh/man hinh den/no video/black screen/mat tin hieu/offline=>Offline; cong vao/bao ve/gatehouse=>Main Gate; choose assetCode if clear.
+Catalog ${JSON.stringify(compactCatalog)}
+User ${query}
+JSON:`;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        options: { temperature: 0, num_predict: 120 },
+      }),
+    });
+    if (!response.ok) throw new Error(`Ollama HTTP ${response.status}`);
+    const payload = await response.json();
+    let parsed;
+    try {
+      parsed = extractJsonObject(payload.response || "");
+    } catch {
+      parsed = extractIntegrationIntentFromText(payload.response || "", compactCatalog);
+    }
+    const intent = {
+      ...resolveIntegrationIntentFromLlm(parsed, catalog, fallback),
+      source: `ollama:${model}`,
+    };
+    return {
+      ...intent,
+      llmEvidence: {
+        requestedAt: new Date().toISOString(),
+        model,
+        endpoint,
+        source: `ollama:${model}`,
+        parsedIntent: parsed,
+        rawResponse: payload.response || "",
+      },
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function listApsModels() {
   if (!fs.existsSync(outputDir)) return [];
   return fs
@@ -427,6 +787,47 @@ function digitalTwinApi() {
           return;
         }
 
+        if (url.pathname === "/api/integration/buildings") {
+          sendJson(res, readJson(path.join(mockDbDir, "integration-buildings.json"), []));
+          return;
+        }
+
+        if (url.pathname === "/api/integration/assets") {
+          sendJson(res, readJson(path.join(mockDbDir, "integration-assets.json"), []));
+          return;
+        }
+
+        if (url.pathname === "/api/integration/ifc-objects") {
+          sendJson(res, readJson(path.join(mockDbDir, "integration-ifc-objects.json"), []));
+          return;
+        }
+
+        if (url.pathname === "/api/integration/llm-status") {
+          checkOllamaStatus()
+            .then((status) => sendJson(res, status))
+            .catch((error) => sendError(res, 500, error.message));
+          return;
+        }
+
+        if (url.pathname === "/api/integration/nl-search" && req.method === "POST") {
+          readRequestJson(req)
+            .then(async ({ query, catalog, fallback }) => {
+              try {
+                return await parseIntegrationWithOllama(query || "", catalog || {}, fallback || {});
+              } catch (error) {
+                return {
+                  ...(fallback || {}),
+                  source: "rules",
+                  llmError: error.message,
+                  explanation: `${fallback?.explanation || "Parsed by rules."} Qwen unavailable; used rule fallback.`,
+                };
+              }
+            })
+            .then((intent) => sendJson(res, intent))
+            .catch((error) => sendError(res, 400, error.message));
+          return;
+        }
+
         if (url.pathname === "/api/operations/assets") {
           sendJson(res, readJson(path.join(mockDbDir, "operations-assets.json"), []));
           return;
@@ -489,6 +890,19 @@ function digitalTwinApi() {
           return;
         }
 
+        const snapshotAssetMatch = url.pathname.match(
+          /^\/api\/validated-snapshots\/([^/]+)\/assets\/([^/]+)$/,
+        );
+        if (snapshotAssetMatch && req.method === "PATCH") {
+          const dataset = decodeURIComponent(snapshotAssetMatch[1]);
+          const ifcGuid = decodeURIComponent(snapshotAssetMatch[2]);
+          readRequestJson(req)
+            .then(({ values }) => updateValidatedSnapshot(dataset, ifcGuid, values || {}))
+            .then((result) => sendJson(res, result))
+            .catch((error) => sendError(res, 400, error.message));
+          return;
+        }
+
         if (url.pathname.startsWith("/bim-output/")) {
           const fileName = decodeURIComponent(url.pathname.replace("/bim-output/", ""));
           const filePath = safeFilePath(outputDir, fileName);
@@ -530,6 +944,8 @@ function digitalTwinApi() {
     },
   };
 }
+
+export { updateValidatedSnapshot };
 
 export default defineConfig({
   plugins: [react(), digitalTwinApi()],

@@ -1,0 +1,4 @@
+assetCode,name,type,buildingCode,floor,room,ifcGuid,latitude,longitude,coordinateSource,sourceSystem,manufacturer,model
+CAM-L09-002,Level 9 Dome Camera 02,Camera,MARRIOTT-EQP,Level 9,North Corridor,0MQTTcamdome0200000000,,,,asset-register-csv,DemoVision,DV-DOME-4K
+PMP-L09-001,Level 9 Booster Pump 01,Pump,MARRIOTT-EQP,Level 9,Mechanical Area,,,,,asset-register-csv,DemoPump,DP-120
+SITE-GATE-001,Campus Gate Sensor,Access Sensor,MARRIOTT-EQP,,Main Gate,,21.02744,105.83402,surveyed-gps,asset-register-csv,DemoAccess,GA-10

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from rules.om_field_rules import OM_FIELD_NAMES
 from rules.mapping_rules import ASSET_SCHEMA, DEFAULT_MAPPING
 
 
@@ -60,6 +61,7 @@ def build_asset_master(cleaned_objects: list[dict]) -> list[dict]:
                 "gateway_id": obj.get("gateway_id", ""),
                 "protocol": obj.get("protocol", ""),
                 "bms_device_id": obj.get("bms_device_id", ""),
+                "bms_device_name": obj.get("bms_device_name", ""),
                 "modbus_slave_id": obj.get("modbus_slave_id", ""),
                 "mqtt_topic": obj.get("mqtt_topic", ""),
                 "rest_endpoint": obj.get("rest_endpoint", ""),
@@ -68,8 +70,13 @@ def build_asset_master(cleaned_objects: list[dict]) -> list[dict]:
                 "realtime_enabled": obj.get("realtime_enabled", ""),
                 "history_enabled": obj.get("history_enabled", ""),
                 "point_template": obj.get("point_template", ""),
+                "operational_scope": obj.get("operational_scope", ""),
+                "operational_scope_reason": obj.get("operational_scope_reason", ""),
+                "operational_scope_source": obj.get("operational_scope_source", ""),
+                "generated_fields": obj.get("generated_fields", []),
                 "review_status": obj.get("review_status", ""),
                 "mapping_status": obj.get("mapping_status", ""),
+                "commissioning_status": obj.get("commissioning_status", ""),
                 "status": obj.get("status", ""),
                 "source_global_id": obj.get("global_id", ""),
                 "ifc_guid": obj.get("global_id", ""),
@@ -85,6 +92,8 @@ def build_asset_master(cleaned_objects: list[dict]) -> list[dict]:
                     **obj.get("source_reference", {}),
                 },
                 "raw_metadata": obj.get("raw_metadata", {}),
+                **{field: obj.get(field, "") for field in OM_FIELD_NAMES},
+                "om_field_sources": obj.get("om_field_sources", {}),
             }
         )
         assets.append(asset)

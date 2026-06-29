@@ -1,101 +1,83 @@
 from __future__ import annotations
 
+from collections import Counter
+
 import pandas as pd
 
-from rules.mapping_rules import NOISE_KEYWORDS
-from rules.field_policy import get_validated_fields
-from rules.validation_rules import FIELD_LABELS, SEVERITY_BY_FIELD
+from rules.om_field_rules import OM_FIELD_GUIDANCE, OM_FIELD_NAMES, missing_om_fields
+from rules.operational_scope import classify_operational_scope
 
 
-def validate_assets(objects: list[dict], profile_name: str = "building_om") -> tuple[pd.DataFrame, dict]:
-    errors = []
-    required_fields = get_validated_fields(profile_name)
+ISSUE_COLUMNS = [
+    "global_id",
+    "object_name",
+    "ifc_class",
+    "operational_scope",
+    "field",
+    "error_type",
+    "severity",
+    "suggested_fix",
+    "profile",
+]
+
+
+def validate_assets(objects: list[dict], profile_name: str = "vsf_om_10") -> tuple[pd.DataFrame, dict]:
+    issues: list[dict] = []
+    missing_by_field: Counter[str] = Counter()
+    incomplete_objects = 0
+    incomplete_operational_assets = 0
+    context_objects = 0
+    scope_review_objects = 0
+    maintainable_assets = 0
+    realtime_assets = 0
+
     for obj in objects:
-        object_name = obj.get("asset_name") or obj.get("name") or obj.get("global_id")
-        for field in required_fields:
-            if not obj.get(field):
-                label = FIELD_LABELS.get(field, field)
-                errors.append(
-                    {
-                        "object_name": object_name,
-                        "ifc_class": obj.get("ifc_class", ""),
-                        "field": label,
-                        "error_type": f"Missing {label}",
-                        "severity": SEVERITY_BY_FIELD.get(field, "Medium"),
-                        "suggested_fix": _suggested_fix(field, obj),
-                        "detail": "",
-                        "profile": profile_name,
-                    }
-                )
-
-        if obj.get("ifc_class") == "IfcBuildingElementProxy":
-            errors.append(
-                {
-                    "object_name": object_name,
-                    "ifc_class": obj.get("ifc_class", ""),
-                    "field": "IFC Class",
-                    "error_type": "Bad Classification",
-                    "severity": "High",
-                    "suggested_fix": "Review object classification before import.",
-                    "detail": "",
-                    "profile": profile_name,
-                }
-            )
-
-        noise_fields = _find_noise_metadata(obj.get("raw_metadata", {}))
-        if noise_fields:
-            errors.append(
-                {
-                    "object_name": object_name,
-                    "ifc_class": obj.get("ifc_class", ""),
-                    "field": "raw_metadata",
-                    "error_type": "Software-specific metadata",
-                    "severity": "Low",
-                    "suggested_fix": "Keep this value in raw_metadata/source_reference, not core asset fields.",
-                    "detail": _summarize_noise_fields(noise_fields),
-                    "profile": profile_name,
-                }
-            )
-
-    df = pd.DataFrame(errors)
-    summary = {
-        "total_errors": len(errors),
-        "High": int((df["severity"] == "High").sum()) if not df.empty else 0,
-        "Medium": int((df["severity"] == "Medium").sum()) if not df.empty else 0,
-        "Low": int((df["severity"] == "Low").sum()) if not df.empty else 0,
-    }
-    return df, summary
-
-
-def _suggested_fix(field: str, obj: dict) -> str:
-    if field == "asset_id":
-        return "Click Apply Basic Clean to generate Asset ID."
-    if field in {"asset_type", "system"}:
-        return "Derive from IFC Class classification rules."
-    if field == "status":
-        return "Set default status to Active."
-    if field == "floor":
-        return "Normalize from IfcBuildingStorey.Name if available."
-    if field == "room_zone":
-        return "Map from IfcSpace.Name or manually assign."
-    return "Add or map this field before import."
-
-
-def _find_noise_metadata(raw_metadata: dict) -> list[str]:
-    found = []
-    for pset_name, props in raw_metadata.items():
-        if not isinstance(props, dict):
+        scope = str(obj.get("operational_scope") or classify_operational_scope(obj)["operational_scope"])
+        if scope == "context":
+            context_objects += 1
             continue
-        for key in props:
-            probe = f"{pset_name} {key}".lower()
-            if any(keyword in probe for keyword in NOISE_KEYWORDS):
-                found.append(f"{pset_name}.{key}")
-    return found
+        if scope == "scope_review":
+            scope_review_objects += 1
+        elif scope == "maintainable":
+            maintainable_assets += 1
+        elif scope == "realtime":
+            realtime_assets += 1
+        missing = missing_om_fields(obj)
+        if missing:
+            incomplete_objects += 1
+            if scope in {"maintainable", "realtime"}:
+                incomplete_operational_assets += 1
+        for field in missing:
+            missing_by_field[field] += 1
+            issues.append(
+                {
+                    "global_id": obj.get("global_id", ""),
+                    "object_name": obj.get("asset_name") or obj.get("name") or obj.get("global_id", ""),
+                    "ifc_class": obj.get("ifc_class", ""),
+                    "operational_scope": scope,
+                    "field": field,
+                    "error_type": f"Thiếu {field}",
+                    "severity": "Medium",
+                    "suggested_fix": OM_FIELD_GUIDANCE[field],
+                    "profile": "vsf_om_10",
+                }
+            )
 
-
-def _summarize_noise_fields(noise_fields: list[str]) -> str:
-    examples = ", ".join(noise_fields[:5])
-    remaining = len(noise_fields) - 5
-    if remaining > 0:
-        return f"{len(noise_fields)} metadata fields flagged. Examples: {examples}, +{remaining} more."
-    return f"{len(noise_fields)} metadata fields flagged. Examples: {examples}."
+    df = pd.DataFrame(issues, columns=ISSUE_COLUMNS)
+    total_objects = len(objects)
+    checked_objects = scope_review_objects + maintainable_assets + realtime_assets
+    return df, {
+        "total_errors": len(issues),
+        "High": 0,
+        "Medium": len(issues),
+        "Low": 0,
+        "total_objects": total_objects,
+        "checked_objects": checked_objects,
+        "context_objects": context_objects,
+        "scope_review_objects": scope_review_objects,
+        "maintainable_assets": maintainable_assets,
+        "realtime_assets": realtime_assets,
+        "complete_objects": maintainable_assets + realtime_assets - incomplete_operational_assets,
+        "incomplete_objects": incomplete_objects,
+        "missing_by_field": {field: missing_by_field[field] for field in OM_FIELD_NAMES},
+    }

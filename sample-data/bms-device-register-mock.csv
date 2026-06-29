@@ -1,0 +1,4 @@
+AssetCode,BMSDeviceID,DeviceName,Status,Floor,Room,Location,Link,Document,Manufacturer
+TNP-VSF-BD-K1-HVAC-M3_A-042,BMS-FCU-042,FCU Tầng 19 - 042,Active,TẦNG 19,Phòng kỹ thuật 19,TẦNG 19 / Phòng kỹ thuật 19,bms://devices/BMS-FCU-042,https://example.local/documents/FCU-042.pdf,INNO
+TNP-VSF-BD-K1-HVAC-M3_A-043,BMS-FCU-043,FCU Tầng 19 - 043,Active,TẦNG 19,Phòng kỹ thuật 19,TẦNG 19 / Phòng kỹ thuật 19,bms://devices/BMS-FCU-043,https://example.local/documents/FCU-043.pdf,INNO
+TNP-VSF-BD-K1-HVAC-M3_A-046,BMS-FCU-046,FCU Tầng 19 - 046,Warning,TẦNG 19,Phòng kỹ thuật 19,TẦNG 19 / Phòng kỹ thuật 19,bms://devices/BMS-FCU-046,https://example.local/documents/FCU-046.pdf,INNO

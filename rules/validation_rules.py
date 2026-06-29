@@ -52,6 +52,9 @@ FIELD_LABELS = {
     "realtime_enabled": "Realtime Enabled",
     "history_enabled": "History Enabled",
     "point_template": "Point Template",
+    "review_status": "Trạng thái duyệt dữ liệu",
+    "mapping_status": "Trạng thái mapping BMS/IoT",
+    "commissioning_status": "Trạng thái commissioning",
     "source_global_id": "IFC GlobalId",
     "status": "Status",
 }
@@ -82,6 +85,9 @@ SEVERITY_BY_FIELD = {
     "realtime_enabled": "Medium",
     "history_enabled": "Low",
     "point_template": "Low",
+    "review_status": "Medium",
+    "mapping_status": "Medium",
+    "commissioning_status": "Medium",
     "source_global_id": "High",
     "status": "Medium",
 }

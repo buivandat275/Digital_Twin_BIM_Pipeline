@@ -1,0 +1,211 @@
+[
+  {
+    "id": "asset-cam-l09-001",
+    "assetCode": "CAM-L09-001",
+    "name": "Level 9 Dome Camera 01",
+    "type": "Camera",
+    "buildingId": "bldg-marriott-equipment",
+    "floor": "Level 9",
+    "room": "North Corridor",
+    "ifcGuid": "0MQTTcamdome0100000000",
+    "status": "Offline",
+    "statusReason": "No signal reported near north corridor",
+    "lastSignalAt": "2026-06-26T08:10:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "manufacturer": "DemoVision",
+      "model": "DV-DOME-4K",
+      "deviceId": "camera-l09-001"
+    }
+  },
+  {
+    "id": "asset-ahu-l09-001",
+    "assetCode": "AHU-L09-001",
+    "name": "Level 9 Air Handling Unit 01",
+    "type": "AHU",
+    "buildingId": "bldg-marriott-equipment",
+    "floor": "Level 9",
+    "room": "Mechanical Area",
+    "ifcGuid": "0MQTTahu01000000000000",
+    "status": "Warning",
+    "statusReason": "Filter pressure warning",
+    "lastSignalAt": "2026-06-26T08:18:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "manufacturer": "DemoAir",
+      "model": "DA-AHU-9000",
+      "deviceId": "ahu-l09-001"
+    }
+  },
+  {
+    "id": "asset-lgt-l09-001",
+    "assetCode": "LGT-L09-001",
+    "name": "Level 9 Circular Light 01",
+    "type": "Light",
+    "buildingId": "bldg-marriott-equipment",
+    "floor": "Level 9",
+    "room": "North Corridor",
+    "ifcGuid": "0MQTTlight010000000000",
+    "status": "Normal",
+    "statusReason": "Healthy",
+    "lastSignalAt": "2026-06-26T08:21:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "manufacturer": "DemoLight",
+      "model": "DL-CIRCLE-500",
+      "deviceId": "light-l09-001"
+    }
+  },
+  {
+    "id": "asset-maint-001",
+    "assetCode": "MAINT-KIT-001",
+    "name": "Level 9 Maintenance Kit",
+    "type": "Tooling",
+    "buildingId": "bldg-marriott-equipment",
+    "floor": "Level 9",
+    "room": "Store Room",
+    "ifcGuid": "",
+    "status": "Normal",
+    "statusReason": "Inventory item",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "owner": "FM Team"
+    }
+  },
+  {
+    "id": "asset-weather-001",
+    "assetCode": "SITE-WEATHER-001",
+    "name": "Outdoor Weather Station",
+    "type": "Weather Station",
+    "buildingId": "bldg-marriott-equipment",
+    "floor": "",
+    "room": "Roof",
+    "latitude": 21.02809,
+    "longitude": 105.83438,
+    "coordinateSource": "surveyed-gps",
+    "ifcGuid": "",
+    "status": "Normal",
+    "statusReason": "Weather telemetry online",
+    "lastSignalAt": "2026-06-26T08:20:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "manufacturer": "DemoSense",
+      "model": "WS-100"
+    }
+  },
+  {
+    "id": "asset-nha1-panel-001",
+    "assetCode": "NHA1-PANEL-001",
+    "name": "Nha 1 Electrical Panel",
+    "type": "Electrical Panel",
+    "buildingId": "bldg-nha-1",
+    "floor": "Level 1",
+    "room": "Electrical Room",
+    "ifcGuid": "",
+    "status": "Fault",
+    "statusReason": "Breaker trip reported by FM team",
+    "lastSignalAt": "2026-06-26T08:05:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "maintainable": "Yes"
+    }
+  },
+  {
+    "id": "asset-nha2-meter-001",
+    "assetCode": "NHA2-METER-001",
+    "name": "Nha 2 Main Electric Meter",
+    "type": "Electric Meter",
+    "buildingId": "bldg-nha-2",
+    "floor": "Level 1",
+    "room": "Meter Room",
+    "ifcGuid": "",
+    "status": "Warning",
+    "statusReason": "High load warning",
+    "lastSignalAt": "2026-06-26T08:12:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "manufacturer": "DemoMeter",
+      "model": "DM-300"
+    }
+  },
+  {
+    "id": "asset-admin-ups-001",
+    "assetCode": "ADMIN-UPS-001",
+    "name": "Administration UPS 01",
+    "type": "UPS",
+    "buildingId": "bldg-admin",
+    "floor": "Level 1",
+    "room": "IT Room",
+    "ifcGuid": "",
+    "status": "Normal",
+    "statusReason": "Battery normal",
+    "lastSignalAt": "2026-06-26T08:19:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "manufacturer": "DemoPower",
+      "model": "UPS-10K"
+    }
+  },
+  {
+    "id": "asset-yard-tank-001",
+    "assetCode": "YARD-TANK-001",
+    "name": "Utility Yard Water Tank",
+    "type": "Water Tank",
+    "buildingId": "bldg-utility-yard",
+    "floor": "",
+    "room": "Outdoor Yard",
+    "latitude": 21.02812,
+    "longitude": 105.83518,
+    "coordinateSource": "surveyed-gps",
+    "ifcGuid": "",
+    "status": "Fault",
+    "statusReason": "Water level sensor alarm",
+    "lastSignalAt": "2026-06-26T08:07:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "capacityM3": "25"
+    }
+  },
+  {
+    "id": "asset-gate-reader-001",
+    "assetCode": "GATE-READER-001",
+    "name": "Gatehouse Access Reader",
+    "type": "Access Reader",
+    "buildingId": "bldg-gatehouse",
+    "floor": "",
+    "room": "Main Gate",
+    "latitude": 21.02744,
+    "longitude": 105.83402,
+    "coordinateSource": "surveyed-gps",
+    "ifcGuid": "",
+    "status": "Offline",
+    "statusReason": "Access reader offline at main gate",
+    "lastSignalAt": "2026-06-26T07:58:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "manufacturer": "DemoAccess",
+      "model": "AR-2"
+    }
+  },
+  {
+    "id": "asset-gate-camera-001",
+    "assetCode": "GATE-CAM-001",
+    "name": "Gatehouse Entry Camera",
+    "type": "Camera",
+    "buildingId": "bldg-gatehouse",
+    "floor": "",
+    "room": "Main Gate",
+    "latitude": 21.02748,
+    "longitude": 105.83407,
+    "coordinateSource": "surveyed-gps",
+    "ifcGuid": "",
+    "status": "Offline",
+    "statusReason": "No video stream from gate entry camera",
+    "lastSignalAt": "2026-06-26T07:55:00+07:00",
+    "sourceSystem": "asset-register-sample",
+    "metadata": {
+      "manufacturer": "DemoVision",
+      "model": "DV-GATE-2K"
+    }
+  }
+]
