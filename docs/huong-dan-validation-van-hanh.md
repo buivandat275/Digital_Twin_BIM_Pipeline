@@ -52,9 +52,15 @@ Trong tab **10 trường EMSD/VSF**:
 1. Chọn **Tải file BMS mock để thử** hoặc chuẩn bị CSV/XLSX của hệ thống BMS.
 2. Upload file vào mục **Map BMS Device Register theo AssetCode**.
 3. Kiểm tra dữ liệu preview.
-4. Chọn **Map BMS vào object theo AssetCode**.
-5. Xem bảng kết quả dòng nào khớp, không khớp hoặc khớp nhiều object.
-6. Tạo lại snapshot validation để xem dữ liệu mới trên APS Viewer.
+4. Chọn **Đối soát và map tự động các mã hợp lệ**.
+5. Các mã duy nhất ở cả BMS và IFC được map ngay.
+6. Các trường hợp có vấn đề được giữ trong hàng chờ:
+   - AssetCode trùng nhiều object IFC.
+   - AssetCode trùng nhiều dòng BMS.
+   - AssetCode BMS không tìm thấy trong IFC.
+7. Với từng dòng chờ, chọn/nhập IFC GlobalId đích, tích **Tôi đã kiểm tra và xác nhận mapping này**.
+8. Chọn **Áp dụng các mapping đã xác nhận**.
+9. Tạo lại snapshot validation để xem dữ liệu mới trên APS Viewer.
 
 Cột bắt buộc:
 
@@ -74,6 +80,8 @@ Các cột hỗ trợ:
 
 Khi `Location` trống, pipeline ghép `Floor / Room` để tạo `VSF.Location`. AssetCode khớp BMS được chuyển sang phạm vi `realtime`.
 
+Pipeline không tự ghi dữ liệu khi AssetCode trùng. Chỉ mapping duy nhất hoặc mapping được người dùng xác nhận mới được áp dụng.
+
 ## Ý nghĩa trạng thái
 
 - **Không thuộc vận hành**: object `context`, vẫn có trong 3D nhưng không bị kiểm tra 10 trường.
@@ -82,6 +90,12 @@ Khi `Location` trống, pipeline ghép `Floor / Room` để tạo `VSF.Location`
 - **Thiếu thông tin**: object còn thiếu ít nhất một trong 10 trường.
 
 Sau mỗi lần lưu trên Viewer, snapshot được cập nhật và validation được tính lại ngay.
+
+Với object **Cần xác nhận vận hành**, Viewer hiển thị ba lựa chọn:
+
+- **Asset bảo trì**: chuyển sang `maintainable` và bắt đầu kiểm tra 10 trường.
+- **Asset realtime/BMS**: chuyển sang `realtime` và bắt đầu kiểm tra 10 trường.
+- **Không thuộc vận hành**: chuyển sang `context`, giữ trong mô hình 3D nhưng loại khỏi validation vận hành.
 
 ## Cách nhập ba trường chưa có sẵn
 

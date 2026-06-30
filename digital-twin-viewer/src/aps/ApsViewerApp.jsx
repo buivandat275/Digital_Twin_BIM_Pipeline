@@ -130,7 +130,7 @@ function EditableOmProperties({ twinAsset, onSave }) {
           ) : null}
         </div>
         <PropertyRows values={Object.fromEntries(OM_FIELD_NAMES.map((field) => [field, twinAsset.normalizedProperties?.[field] || ""]))} />
-        {Object.keys(twinAsset.bmsDevice || {}).length ? (
+        {twinAsset.bmsDevice?.device_id ? (
           <>
             <h3>Thông tin BMS Device</h3>
             <PropertyRows values={twinAsset.bmsDevice} />
@@ -166,7 +166,47 @@ function EditableOmProperties({ twinAsset, onSave }) {
   );
 }
 
-function PropertyInspector({ selection, twinAsset, similarAssets, onFocusAsset, onSaveAsset }) {
+function ScopeConfirmation({ twinAsset, onConfirm }) {
+  const [state, setState] = useState({ status: "idle", message: "" });
+
+  async function confirm(scope) {
+    setState({ status: "saving", message: "Đang lưu quyết định..." });
+    try {
+      await onConfirm(twinAsset.ifcGuid, scope);
+      setState({ status: "saved", message: "Đã cập nhật phạm vi vận hành." });
+    } catch (error) {
+      setState({ status: "error", message: error.message });
+    }
+  }
+
+  return (
+    <section className="aps-scope-confirmation">
+      <strong>Xác nhận object này có thuộc giai đoạn vận hành không?</strong>
+      <p>Chọn đúng phạm vi sau khi kiểm tra loại thiết bị và hồ sơ dự án.</p>
+      <div>
+        <button disabled={state.status === "saving"} onClick={() => confirm("maintainable")} type="button">
+          Asset bảo trì
+        </button>
+        <button disabled={state.status === "saving"} onClick={() => confirm("realtime")} type="button">
+          Asset realtime/BMS
+        </button>
+        <button disabled={state.status === "saving"} onClick={() => confirm("context")} type="button">
+          Không thuộc vận hành
+        </button>
+      </div>
+      {state.message ? <small className={state.status}>{state.message}</small> : null}
+    </section>
+  );
+}
+
+function PropertyInspector({
+  selection,
+  twinAsset,
+  similarAssets,
+  onConfirmScope,
+  onFocusAsset,
+  onSaveAsset,
+}) {
   const [activeTab, setActiveTab] = useState("source");
   const [showSimilar, setShowSimilar] = useState(false);
   useEffect(() => {
@@ -206,6 +246,10 @@ function PropertyInspector({ selection, twinAsset, similarAssets, onFocusAsset, 
           Lỗi cần xử lý
         </button>
       </nav>
+
+      {twinAsset?.operationalScope === "scope_review" ? (
+        <ScopeConfirmation onConfirm={onConfirmScope} twinAsset={twinAsset} />
+      ) : null}
 
       {activeTab === "source" ? (
         <dl>
@@ -289,6 +333,7 @@ export function ApsViewerApp() {
   const [externalId, setExternalId] = useState("");
   const [selection, setSelection] = useState(null);
   const [showIncompleteList, setShowIncompleteList] = useState(false);
+  const [incompleteListMode, setIncompleteListMode] = useState("operational");
   const [incompleteSearch, setIncompleteSearch] = useState("");
   const [snapshotState, setSnapshotState] = useState({
     status: initialQuery.dataset ? "loading" : "none",
@@ -333,18 +378,29 @@ export function ApsViewerApp() {
   const incompleteOperationalAssets = useMemo(
     () =>
       (snapshotState.data?.assets || []).filter(
-        (asset) => asset.operationalScope !== "context" && (asset.validationIssues || []).length > 0,
+        (asset) =>
+          ["maintainable", "realtime"].includes(asset.operationalScope) &&
+          (asset.validationIssues || []).length > 0,
       ),
     [snapshotState.data],
   );
+  const scopeReviewAssets = useMemo(
+    () =>
+      (snapshotState.data?.assets || []).filter(
+        (asset) => asset.operationalScope === "scope_review",
+      ),
+    [snapshotState.data],
+  );
+  const activeIncompleteList =
+    incompleteListMode === "scope_review" ? scopeReviewAssets : incompleteOperationalAssets;
   const visibleIncompleteAssets = useMemo(() => {
     const query = incompleteSearch.trim().toLowerCase();
-    if (!query) return incompleteOperationalAssets;
-    return incompleteOperationalAssets.filter((asset) =>
+    if (!query) return activeIncompleteList;
+    return activeIncompleteList.filter((asset) =>
       [asset.name, asset.ifcGuid, asset.type, asset.operationalScope]
         .some((value) => String(value || "").toLowerCase().includes(query)),
     );
-  }, [incompleteOperationalAssets, incompleteSearch]);
+  }, [activeIncompleteList, incompleteSearch]);
 
   useEffect(() => {
     if (!initialQuery.dataset) return undefined;
@@ -413,14 +469,14 @@ export function ApsViewerApp() {
     setSelection(null);
   }
 
-  async function saveTwinAsset(ifcGuid, values) {
+  async function saveTwinAsset(ifcGuid, values, operationalScope = "") {
     if (!initialQuery.dataset) throw new Error("URL chưa có dataset để lưu chỉnh sửa.");
     const response = await fetch(
       `/api/validated-snapshots/${encodeURIComponent(initialQuery.dataset)}/assets/${encodeURIComponent(ifcGuid)}`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ values }),
+        body: JSON.stringify({ values, operationalScope }),
       },
     );
     const payload = await response.json().catch(() => ({}));
@@ -433,6 +489,10 @@ export function ApsViewerApp() {
         assets: (current.data?.assets || []).map((asset) => (asset.ifcGuid === ifcGuid ? payload.asset : asset)),
       },
     }));
+  }
+
+  async function confirmTwinAssetScope(ifcGuid, operationalScope) {
+    return saveTwinAsset(ifcGuid, {}, operationalScope);
   }
 
   async function focusTwinAsset(ifcGuid) {
@@ -533,7 +593,7 @@ export function ApsViewerApp() {
               </strong>
               <span>
                 {snapshotState.status === "ready"
-                  ? `${snapshotState.data.summary?.operationalAssetCount || 0} vận hành · ${snapshotState.data.summary?.scopeReviewCount || 0} cần xác nhận · ${incompleteOperationalAssets.length} thiếu`
+                  ? `${snapshotState.data.summary?.operationalAssetCount || 0} vận hành · ${snapshotState.data.summary?.complete || 0} đủ · ${incompleteOperationalAssets.length} thiếu · ${scopeReviewAssets.length} chờ xác nhận`
                   : snapshotState.error}
               </span>
             </div>
@@ -543,21 +603,41 @@ export function ApsViewerApp() {
           <div className="aps-incomplete-actions">
             <button
               disabled={!incompleteOperationalAssets.length}
-              onClick={() => setShowIncompleteList(true)}
+              onClick={() => {
+                setIncompleteListMode("operational");
+                setIncompleteSearch("");
+                setShowIncompleteList(true);
+              }}
               type="button"
             >
               <ListFilter size={15} />
-              Xem {incompleteOperationalAssets.length} object chưa đủ thông tin
+              Xem {incompleteOperationalAssets.length} asset vận hành thiếu
+            </button>
+            <button
+              disabled={!scopeReviewAssets.length}
+              onClick={() => {
+                setIncompleteListMode("scope_review");
+                setIncompleteSearch("");
+                setShowIncompleteList(true);
+              }}
+              type="button"
+            >
+              <ListFilter size={15} />
+              Xem {scopeReviewAssets.length} object cần xác nhận
             </button>
           </div>
         ) : null}
         {showIncompleteList ? (
-          <aside className="aps-incomplete-list" aria-label="Object vận hành chưa đủ thông tin">
+          <aside className="aps-incomplete-list" aria-label="Danh sách kiểm tra dữ liệu vận hành">
             <header>
               <div>
-                <strong>Object vận hành chưa đủ thông tin</strong>
+                <strong>
+                  {incompleteListMode === "scope_review"
+                    ? "Object cần xác nhận phạm vi vận hành"
+                    : "Asset vận hành chưa đủ thông tin"}
+                </strong>
                 <span>
-                  Hiển thị {visibleIncompleteAssets.length}/{incompleteOperationalAssets.length} object
+                  Hiển thị {visibleIncompleteAssets.length}/{activeIncompleteList.length} object
                 </span>
               </div>
               <button onClick={() => setShowIncompleteList(false)} title="Đóng danh sách" type="button">
@@ -598,6 +678,7 @@ export function ApsViewerApp() {
           </aside>
         ) : null}
         <PropertyInspector
+          onConfirmScope={confirmTwinAssetScope}
           onFocusAsset={focusTwinAsset}
           onSaveAsset={saveTwinAsset}
           selection={selection}

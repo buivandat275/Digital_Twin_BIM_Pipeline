@@ -62,6 +62,7 @@ def build_asset_master(cleaned_objects: list[dict]) -> list[dict]:
                 "protocol": obj.get("protocol", ""),
                 "bms_device_id": obj.get("bms_device_id", ""),
                 "bms_device_name": obj.get("bms_device_name", ""),
+                "bms_import_source": obj.get("bms_import_source", ""),
                 "modbus_slave_id": obj.get("modbus_slave_id", ""),
                 "mqtt_topic": obj.get("mqtt_topic", ""),
                 "rest_endpoint": obj.get("rest_endpoint", ""),

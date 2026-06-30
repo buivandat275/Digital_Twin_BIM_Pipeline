@@ -49,17 +49,7 @@ def build_validated_twin_snapshot(
                     field: (asset.get("om_field_sources") or {}).get(field, "missing")
                     for field in OM_FIELD_NAMES
                 },
-                "bmsDevice": _clean_mapping(
-                    {
-                        "device_id": asset.get("bms_device_id") or asset.get("device_id", ""),
-                        "device_name": asset.get("bms_device_name", ""),
-                        "status": asset.get("status", ""),
-                        "floor": asset.get("floor", ""),
-                        "room": asset.get("room_zone", ""),
-                        "location": asset.get("location", ""),
-                        "mapping_status": asset.get("mapping_status", ""),
-                    }
-                ),
+                "bmsDevice": _bms_device(asset),
                 "technicalProperties": _clean_mapping(asset.get("technical_properties")),
                 "quantityProperties": _clean_mapping(asset.get("quantity_properties")),
                 "sourceReference": _clean_mapping(asset.get("source_reference")),
@@ -126,6 +116,24 @@ def _readiness_status(asset: dict, issues: list[dict]) -> str:
 
 def _operational_properties(asset: dict) -> dict:
     return {field: _json_safe(asset.get(field, "")) for field in OPERATIONAL_FIELDS}
+
+
+def _bms_device(asset: dict) -> dict:
+    bms_device_id = str(asset.get("bms_device_id") or "").strip()
+    if not bms_device_id:
+        return {}
+    return _clean_mapping(
+        {
+            "device_id": bms_device_id,
+            "device_name": asset.get("bms_device_name", ""),
+            "status": asset.get("status", ""),
+            "floor": asset.get("floor", ""),
+            "room": asset.get("room_zone", ""),
+            "location": asset.get("location", ""),
+            "mapping_status": asset.get("mapping_status", ""),
+            "source": asset.get("bms_import_source", ""),
+        }
+    )
 
 
 def _clean_mapping(value: Any) -> dict:

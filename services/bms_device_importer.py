@@ -66,10 +66,7 @@ def normalize_bms_dataframe(raw: pd.DataFrame) -> pd.DataFrame:
     return result[BMS_COLUMNS]
 
 
-def merge_bms_devices(
-    objects: list[dict],
-    bms_df: pd.DataFrame,
-) -> tuple[list[dict], pd.DataFrame, dict]:
+def reconcile_bms_devices(objects: list[dict], bms_df: pd.DataFrame) -> dict:
     normalized_bms = normalize_bms_dataframe(bms_df)
     object_indexes: dict[str, list[int]] = defaultdict(list)
     for index, obj in enumerate(objects):
@@ -78,54 +75,200 @@ def merge_bms_devices(
             if code and index not in object_indexes[code]:
                 object_indexes[code].append(index)
 
-    merged = [obj.copy() for obj in objects]
-    logs = []
-    matched_rows = 0
-    matched_objects: set[int] = set()
+    bms_code_counts = normalized_bms["AssetCode"].map(_normalize_code).value_counts().to_dict()
+    auto_mappings = []
+    problems = []
+    rows = []
 
-    for row_number, row in enumerate(normalized_bms.to_dict(orient="records"), start=2):
+    for row_index, row in enumerate(normalized_bms.to_dict(orient="records")):
+        row_number = row_index + 2
         asset_code = _clean_value(row.get("AssetCode"))
-        matches = object_indexes.get(_normalize_code(asset_code), [])
-        if not matches:
-            logs.append(
+        normalized_code = _normalize_code(asset_code)
+        matches = object_indexes.get(normalized_code, [])
+        candidates = [_candidate(objects[index]) for index in matches]
+        problem_type = ""
+        problem_message = ""
+
+        if bms_code_counts.get(normalized_code, 0) > 1:
+            problem_type = "duplicate_bms"
+            problem_message = "AssetCode xuất hiện nhiều dòng trong file BMS."
+        elif not matches:
+            problem_type = "unmatched"
+            problem_message = "Không tìm thấy AssetCode tương ứng trong IFC."
+        elif len(matches) > 1:
+            problem_type = "duplicate_ifc"
+            problem_message = "AssetCode đang thuộc nhiều object IFC; phải chọn đúng object."
+
+        if problem_type:
+            problem = {
+                "problem_id": f"bms-row-{row_index}",
+                "bms_row_index": row_index,
+                "row": row_number,
+                "asset_code": asset_code,
+                "bms_device_id": _clean_value(row.get("BMSDeviceID")),
+                "device_name": _clean_value(row.get("DeviceName")),
+                "problem_type": problem_type,
+                "message": problem_message,
+                "candidates": candidates,
+            }
+            problems.append(problem)
+            rows.append(
                 {
                     "row": row_number,
                     "asset_code": asset_code,
-                    "bms_device_id": _clean_value(row.get("BMSDeviceID")),
-                    "result": "Không tìm thấy AssetCode",
-                    "matched_objects": 0,
-                    "changed_fields": "",
+                    "bms_device_id": problem["bms_device_id"],
+                    "result": f"Chờ xác nhận - {problem_message}",
+                    "candidate_count": len(candidates),
                 }
             )
             continue
 
-        matched_rows += 1
-        row_changed_fields: set[str] = set()
-        for object_index in matches:
-            matched_objects.add(object_index)
-            item = merged[object_index]
-            changed_fields = _apply_bms_row(item, row)
-            row_changed_fields.update(changed_fields)
-
-        logs.append(
+        target = candidates[0]
+        auto_mappings.append(
+            {
+                "bms_row_index": row_index,
+                "target_global_id": target["global_id"],
+                "decision": "auto",
+            }
+        )
+        rows.append(
             {
                 "row": row_number,
                 "asset_code": asset_code,
                 "bms_device_id": _clean_value(row.get("BMSDeviceID")),
-                "result": "Đã map" if len(matches) == 1 else "Đã map nhiều object - cần kiểm tra AssetCode trùng",
-                "matched_objects": len(matches),
-                "changed_fields": ", ".join(sorted(row_changed_fields)),
+                "result": "Sẵn sàng tự động map",
+                "candidate_count": 1,
             }
         )
 
-    summary = {
-        "bms_rows": len(normalized_bms),
-        "matched_rows": matched_rows,
-        "unmatched_rows": len(normalized_bms) - matched_rows,
-        "matched_objects": len(matched_objects),
-        "duplicate_matches": sum(1 for row in logs if row["matched_objects"] > 1),
+    return {
+        "bms_df": normalized_bms,
+        "auto_mappings": auto_mappings,
+        "problems": problems,
+        "reconciliation_df": pd.DataFrame(rows),
+        "summary": {
+            "bms_rows": len(normalized_bms),
+            "auto_ready": len(auto_mappings),
+            "problems": len(problems),
+            "duplicate_ifc": sum(problem["problem_type"] == "duplicate_ifc" for problem in problems),
+            "duplicate_bms": sum(problem["problem_type"] == "duplicate_bms" for problem in problems),
+            "unmatched": sum(problem["problem_type"] == "unmatched" for problem in problems),
+        },
     }
-    return merged, pd.DataFrame(logs), summary
+
+
+def apply_bms_mappings(
+    objects: list[dict],
+    bms_df: pd.DataFrame,
+    mappings: list[dict],
+    *,
+    mapping_source: str,
+) -> tuple[list[dict], pd.DataFrame, dict]:
+    normalized_bms = normalize_bms_dataframe(bms_df)
+    merged = [obj.copy() for obj in objects]
+    guid_indexes = {
+        str(obj.get("global_id") or obj.get("source_global_id") or "").strip(): index
+        for index, obj in enumerate(merged)
+        if str(obj.get("global_id") or obj.get("source_global_id") or "").strip()
+    }
+    claimed_targets: set[str] = set()
+    logs = []
+    applied = 0
+
+    for mapping in mappings:
+        row_index = int(mapping.get("bms_row_index", -1))
+        target_global_id = str(mapping.get("target_global_id") or "").strip()
+        if row_index < 0 or row_index >= len(normalized_bms):
+            logs.append(_decision_log(mapping, "", "", "Không áp dụng - dòng BMS không hợp lệ"))
+            continue
+        row = normalized_bms.iloc[row_index].to_dict()
+        asset_code = _clean_value(row.get("AssetCode"))
+        bms_device_id = _clean_value(row.get("BMSDeviceID"))
+        if not target_global_id or target_global_id not in guid_indexes:
+            logs.append(
+                _decision_log(
+                    mapping,
+                    asset_code,
+                    bms_device_id,
+                    "Không áp dụng - IFC GlobalId không tồn tại",
+                )
+            )
+            continue
+        if target_global_id in claimed_targets:
+            logs.append(
+                _decision_log(
+                    mapping,
+                    asset_code,
+                    bms_device_id,
+                    "Không áp dụng - object đã được chọn cho một dòng BMS khác",
+                )
+            )
+            continue
+
+        claimed_targets.add(target_global_id)
+        item = merged[guid_indexes[target_global_id]]
+        changed_fields = _apply_bms_row(item, row)
+        applied += 1
+        logs.append(
+            {
+                "row": row_index + 2,
+                "asset_code": asset_code,
+                "bms_device_id": bms_device_id,
+                "target_global_id": target_global_id,
+                "mapping_source": mapping_source,
+                "result": "Đã map",
+                "changed_fields": ", ".join(sorted(changed_fields)),
+            }
+        )
+
+    return merged, pd.DataFrame(logs), {"requested": len(mappings), "applied": applied}
+
+
+def merge_bms_devices(
+    objects: list[dict],
+    bms_df: pd.DataFrame,
+) -> tuple[list[dict], pd.DataFrame, dict]:
+    """Backward-compatible auto-map: ambiguous rows are blocked and left untouched."""
+    reconciliation = reconcile_bms_devices(objects, bms_df)
+    merged, applied_log, apply_summary = apply_bms_mappings(
+        objects,
+        reconciliation["bms_df"],
+        reconciliation["auto_mappings"],
+        mapping_source="auto_unique_asset_code",
+    )
+    summary = {
+        **reconciliation["summary"],
+        "matched_rows": apply_summary["applied"],
+        "unmatched_rows": reconciliation["summary"]["unmatched"],
+        "matched_objects": apply_summary["applied"],
+        "duplicate_matches": (
+            reconciliation["summary"]["duplicate_ifc"] + reconciliation["summary"]["duplicate_bms"]
+        ),
+    }
+    return merged, applied_log, summary
+
+
+def _candidate(obj: dict) -> dict:
+    return {
+        "global_id": str(obj.get("global_id") or obj.get("source_global_id") or "").strip(),
+        "name": obj.get("asset_name") or obj.get("name", ""),
+        "ifc_class": obj.get("ifc_class", ""),
+        "floor": obj.get("floor", ""),
+        "room": obj.get("room_zone", ""),
+        "location": obj.get("location", ""),
+    }
+
+
+def _decision_log(mapping: dict, asset_code: str, bms_device_id: str, result: str) -> dict:
+    return {
+        "row": int(mapping.get("bms_row_index", -1)) + 2,
+        "asset_code": asset_code,
+        "bms_device_id": bms_device_id,
+        "target_global_id": str(mapping.get("target_global_id") or ""),
+        "mapping_source": str(mapping.get("decision") or "manual_confirmation"),
+        "result": result,
+        "changed_fields": "",
+    }
 
 
 def _apply_bms_row(item: dict, row: dict) -> list[str]:

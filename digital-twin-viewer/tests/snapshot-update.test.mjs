@@ -48,6 +48,13 @@ test("viewer edit persists ten fields and recalculates validation", () => {
     assert.equal(result.summary.incomplete, 1);
     assert.deepEqual(Object.keys(result.asset.normalizedProperties), fields);
     assert.equal(persisted.assets[0].fieldSources["VSF.Document"], "manual_viewer");
+
+    const scopeResult = updateValidatedSnapshot(fileName, "GUID-2", {}, "context");
+    assert.equal(scopeResult.asset.operationalScope, "context");
+    assert.equal(scopeResult.asset.readinessStatus, "Excluded");
+    assert.equal(scopeResult.summary.operationalAssetCount, 1);
+    assert.equal(scopeResult.summary.contextCount, 1);
+    assert.equal(scopeResult.summary.incomplete, 0);
   } finally {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   }

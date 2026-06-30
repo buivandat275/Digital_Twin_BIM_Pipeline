@@ -3323,6 +3323,67 @@ select {
   background: #fff;
 }
 
+.aps-scope-confirmation {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid #ead59a;
+  color: #694b12;
+  background: #fff9e8;
+}
+
+.aps-scope-confirmation > strong {
+  font-size: 11px;
+}
+
+.aps-scope-confirmation > p {
+  margin: 0;
+  color: #80652e;
+  font-size: 10px;
+}
+
+.aps-scope-confirmation > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.aps-scope-confirmation button {
+  min-height: 29px;
+  padding: 5px 7px;
+  border: 1px solid #cba94f;
+  border-radius: 5px;
+  color: #654910;
+  background: #fff;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.aps-scope-confirmation button:nth-child(2) {
+  border-color: #0f7c84;
+  color: #0d6770;
+}
+
+.aps-scope-confirmation button:last-child {
+  border-color: #9aa8ad;
+  color: #52636a;
+}
+
+.aps-scope-confirmation button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.aps-scope-confirmation > small {
+  color: #126b47;
+  font-size: 10px;
+}
+
+.aps-scope-confirmation > small.error {
+  color: #b42318;
+}
+
 .aps-property-inspector dl {
   display: grid;
   grid-template-columns: minmax(100px, 40%) minmax(0, 1fr);

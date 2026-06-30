@@ -200,7 +200,7 @@ function recalculateSnapshotSummary(snapshot) {
   return snapshot;
 }
 
-function updateValidatedSnapshot(fileName, ifcGuid, values) {
+function updateValidatedSnapshot(fileName, ifcGuid, values, operationalScope = "") {
   const filePath = safeFilePath(outputDir, fileName);
   if (!filePath || path.extname(filePath).toLowerCase() !== ".json" || !fs.existsSync(filePath)) {
     throw new Error("Không tìm thấy snapshot validation.");
@@ -213,6 +213,16 @@ function updateValidatedSnapshot(fileName, ifcGuid, values) {
     (item) => String(item.ifcGuid || "").trim().toLowerCase() === String(ifcGuid || "").trim().toLowerCase(),
   );
   if (!asset) throw new Error("Không tìm thấy IFC GlobalId trong snapshot.");
+
+  if (operationalScope) {
+    const allowedScopes = new Set(["context", "maintainable", "realtime", "scope_review"]);
+    if (!allowedScopes.has(operationalScope)) {
+      throw new Error("Operational scope không hợp lệ.");
+    }
+    asset.operationalScope = operationalScope;
+    asset.scopeReason = "Phạm vi do người dùng xác nhận trực tiếp trên APS Viewer";
+    asset.scopeSource = "manual_viewer";
+  }
 
   const existingValues = asset.normalizedProperties || {};
   asset.normalizedProperties = Object.fromEntries(
@@ -897,7 +907,9 @@ function digitalTwinApi() {
           const dataset = decodeURIComponent(snapshotAssetMatch[1]);
           const ifcGuid = decodeURIComponent(snapshotAssetMatch[2]);
           readRequestJson(req)
-            .then(({ values }) => updateValidatedSnapshot(dataset, ifcGuid, values || {}))
+            .then(({ values, operationalScope }) =>
+              updateValidatedSnapshot(dataset, ifcGuid, values || {}, operationalScope || ""),
+            )
             .then((result) => sendJson(res, result))
             .catch((error) => sendError(res, 400, error.message));
           return;

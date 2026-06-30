@@ -12,7 +12,11 @@ from dotenv import load_dotenv
 
 from rules.field_policy import get_policy_rows, get_profile, get_profile_names
 from rules.mapping_rules import DEFAULT_MAPPING
-from services.bms_device_importer import load_bms_device_file, merge_bms_devices
+from services.bms_device_importer import (
+    apply_bms_mappings,
+    load_bms_device_file,
+    reconcile_bms_devices,
+)
 from services.cleaner import apply_basic_clean
 from services.correction_template import (
     build_correction_template,
@@ -126,7 +130,10 @@ def init_state() -> None:
         "correction_log_df": pd.DataFrame(),
         "bms_device_df": pd.DataFrame(),
         "bms_mapping_log_df": pd.DataFrame(),
+        "bms_reconciliation_df": pd.DataFrame(),
+        "bms_reconciliation_problems": [],
         "bms_mapping_summary": {},
+        "bms_uploaded_name": "",
         "mapping_df": default_mapping_dataframe(),
         "preview_tables": {},
         "processing_status": "Not started",
@@ -1073,11 +1080,10 @@ def render_preview_tab() -> None:
 
 
 def render_bms_device_import_tools() -> None:
-    st.subheader("Map BMS Device Register theo AssetCode")
+    st.subheader("Đối soát BMS–IFC theo AssetCode")
     st.caption(
-        "Import CSV/XLSX từ BMS. Hệ thống đối chiếu AssetCode với EMSD.Common.Asset Code "
-        "và VSF.Common.Asset Code, sau đó cập nhật Device ID, tên, status, tầng, phòng, "
-        "location, link, document và manufacturer."
+        "AssetCode duy nhất ở cả BMS và IFC được map tự động. AssetCode trùng hoặc không tìm thấy "
+        "bị chặn và đưa vào hàng chờ để người dùng xác nhận từng mapping trước khi ghi."
     )
 
     mock_path = BASE_DIR / "sample-data" / "bms-device-register-mock.csv"
@@ -1097,6 +1103,12 @@ def render_bms_device_import_tools() -> None:
     )
     if uploaded_bms is not None:
         try:
+            if uploaded_bms.name != st.session_state.bms_uploaded_name:
+                st.session_state.bms_mapping_log_df = pd.DataFrame()
+                st.session_state.bms_reconciliation_df = pd.DataFrame()
+                st.session_state.bms_reconciliation_problems = []
+                st.session_state.bms_mapping_summary = {}
+                st.session_state.bms_uploaded_name = uploaded_bms.name
             st.session_state.bms_device_df = load_bms_device_file(uploaded_bms)
         except Exception as exc:
             st.error(f"Không thể đọc BMS Device Register: {exc}")
@@ -1108,47 +1120,167 @@ def render_bms_device_import_tools() -> None:
             use_container_width=True,
             hide_index=True,
         )
-        if st.button("Map BMS vào object theo AssetCode", type="primary"):
+        if st.button("Đối soát và map tự động các mã hợp lệ", type="primary"):
             source = st.session_state.cleaned_objects or _objects_with_blank_asset_fields(st.session_state.objects)
             if not source:
                 st.warning("Hãy nạp IFC và chạy Phân loại vận hành & map 10 trường trước.")
             else:
-                merged, log_df, mapping_summary = merge_bms_devices(
+                reconciliation = reconcile_bms_devices(
                     source,
                     st.session_state.bms_device_df,
                 )
-                st.session_state.cleaned_objects = merged
-                st.session_state.bms_mapping_log_df = log_df
-                st.session_state.bms_mapping_summary = mapping_summary
-                st.session_state.preview_tables = {}
-                st.session_state.validated_snapshot_path = ""
-                st.session_state.validated_snapshot_name = ""
-                validation_df, summary = validate_assets(
-                    merged,
-                    st.session_state.selected_profile,
+                merged, auto_log_df, apply_summary = apply_bms_mappings(
+                    source,
+                    reconciliation["bms_df"],
+                    reconciliation["auto_mappings"],
+                    mapping_source="auto_unique_asset_code",
                 )
-                st.session_state.validation_df = validation_df
-                st.session_state.validation_summary = summary
+                mapping_summary = {
+                    **reconciliation["summary"],
+                    "auto_applied": apply_summary["applied"],
+                    "manual_applied": 0,
+                }
+                st.session_state.cleaned_objects = merged
+                st.session_state.bms_mapping_log_df = auto_log_df
+                st.session_state.bms_reconciliation_df = reconciliation["reconciliation_df"]
+                st.session_state.bms_reconciliation_problems = reconciliation["problems"]
+                st.session_state.bms_mapping_summary = mapping_summary
+                _refresh_after_bms_mapping(merged)
                 st.success(
-                    f"Đã map {mapping_summary['matched_rows']}/{mapping_summary['bms_rows']} dòng BMS "
-                    f"vào {mapping_summary['matched_objects']} object IFC."
+                    f"Đã tự động map {mapping_summary['auto_applied']} dòng hợp lệ. "
+                    f"Còn {mapping_summary['problems']} dòng cần xử lý."
                 )
 
     mapping_summary = st.session_state.bms_mapping_summary
     if mapping_summary:
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Dòng BMS", mapping_summary.get("bms_rows", 0))
-        m2.metric("Dòng khớp", mapping_summary.get("matched_rows", 0))
-        m3.metric("Không khớp", mapping_summary.get("unmatched_rows", 0))
-        m4.metric("Object cập nhật", mapping_summary.get("matched_objects", 0))
+        m2.metric("Tự động map", mapping_summary.get("auto_applied", 0))
+        m3.metric("Đã xác nhận tay", mapping_summary.get("manual_applied", 0))
+        m4.metric("Chờ xử lý", len(st.session_state.bms_reconciliation_problems))
+
+    if not st.session_state.bms_reconciliation_df.empty:
+        st.write("Kết quả đối soát")
+        st.dataframe(
+            st.session_state.bms_reconciliation_df,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    problems = st.session_state.bms_reconciliation_problems
+    if problems:
+        st.warning(
+            f"Có {len(problems)} mapping bị chặn. Chỉ các dòng được tích xác nhận và có IFC GlobalId hợp lệ mới được ghi."
+        )
+        decisions = []
+        for problem in problems:
+            with st.expander(
+                f"Dòng {problem['row']} · {problem['asset_code']} · {problem['message']}",
+                expanded=True,
+            ):
+                st.caption(
+                    f"BMS Device ID: {problem['bms_device_id'] or '(trống)'} · "
+                    f"Tên: {problem['device_name'] or '(trống)'}"
+                )
+                candidates = problem.get("candidates", [])
+                if candidates:
+                    candidate_lookup = {
+                        (
+                            f"{candidate['name'] or '(không tên)'} | {candidate['global_id']} | "
+                            f"{candidate['floor']} | {candidate['location']}"
+                        ): candidate["global_id"]
+                        for candidate in candidates
+                    }
+                    selected_label = st.selectbox(
+                        "Chọn object IFC đích",
+                        list(candidate_lookup),
+                        key=f"{problem['problem_id']}_target_select",
+                    )
+                    target_global_id = candidate_lookup[selected_label]
+                    st.dataframe(
+                        pd.DataFrame(candidates),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    target_global_id = st.text_input(
+                        "Nhập IFC GlobalId đích",
+                        key=f"{problem['problem_id']}_target_guid",
+                        help="Dùng khi AssetCode BMS không tìm thấy tự động. GlobalId phải tồn tại trong IFC đang nạp.",
+                    ).strip()
+                confirmed = st.checkbox(
+                    "Tôi đã kiểm tra và xác nhận mapping này",
+                    key=f"{problem['problem_id']}_confirmed",
+                )
+                if confirmed and target_global_id:
+                    decisions.append(
+                        {
+                            "problem_id": problem["problem_id"],
+                            "bms_row_index": problem["bms_row_index"],
+                            "target_global_id": target_global_id,
+                            "decision": "manual_confirmation",
+                        }
+                    )
+
+        if st.button("Áp dụng các mapping đã xác nhận", type="primary"):
+            if not decisions:
+                st.warning("Chưa có mapping nào được tích xác nhận.")
+            else:
+                merged, manual_log_df, apply_summary = apply_bms_mappings(
+                    st.session_state.cleaned_objects,
+                    st.session_state.bms_device_df,
+                    decisions,
+                    mapping_source="manual_confirmation",
+                )
+                successful_rows = set(
+                    int(row["row"]) - 2
+                    for row in manual_log_df.to_dict(orient="records")
+                    if row.get("result") == "Đã map"
+                )
+                st.session_state.cleaned_objects = merged
+                st.session_state.bms_reconciliation_problems = [
+                    problem
+                    for problem in problems
+                    if problem["bms_row_index"] not in successful_rows
+                ]
+                st.session_state.bms_mapping_log_df = pd.concat(
+                    [st.session_state.bms_mapping_log_df, manual_log_df],
+                    ignore_index=True,
+                )
+                if not st.session_state.bms_reconciliation_df.empty:
+                    resolved_rows = {row_index + 2 for row_index in successful_rows}
+                    mask = st.session_state.bms_reconciliation_df["row"].isin(resolved_rows)
+                    st.session_state.bms_reconciliation_df.loc[
+                        mask, "result"
+                    ] = "Đã map sau xác nhận"
+                st.session_state.bms_mapping_summary["manual_applied"] = (
+                    st.session_state.bms_mapping_summary.get("manual_applied", 0)
+                    + apply_summary["applied"]
+                )
+                _refresh_after_bms_mapping(merged)
+                st.success(
+                    f"Đã áp dụng {apply_summary['applied']}/{apply_summary['requested']} mapping được xác nhận."
+                )
 
     if not st.session_state.bms_mapping_log_df.empty:
-        st.write("Kết quả đối chiếu AssetCode")
+        st.write("Nhật ký mapping đã ghi")
         st.dataframe(
             st.session_state.bms_mapping_log_df,
             use_container_width=True,
             hide_index=True,
         )
+
+
+def _refresh_after_bms_mapping(merged: list[dict]) -> None:
+    st.session_state.preview_tables = {}
+    st.session_state.validated_snapshot_path = ""
+    st.session_state.validated_snapshot_name = ""
+    validation_df, summary = validate_assets(
+        merged,
+        st.session_state.selected_profile,
+    )
+    st.session_state.validation_df = validation_df
+    st.session_state.validation_summary = summary
 
 
 def render_import_export_tab() -> None:
@@ -1319,7 +1451,10 @@ def load_ifc_into_session(file_path: str | Path, file_name: str, upload_time: st
     st.session_state.correction_log_df = pd.DataFrame()
     st.session_state.bms_device_df = pd.DataFrame()
     st.session_state.bms_mapping_log_df = pd.DataFrame()
+    st.session_state.bms_reconciliation_df = pd.DataFrame()
+    st.session_state.bms_reconciliation_problems = []
     st.session_state.bms_mapping_summary = {}
+    st.session_state.bms_uploaded_name = ""
     st.session_state.preview_tables = {}
     st.session_state.validated_snapshot_path = ""
     st.session_state.validated_snapshot_name = ""
