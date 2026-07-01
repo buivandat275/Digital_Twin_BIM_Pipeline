@@ -24,6 +24,12 @@ from services.correction_template import (
     load_correction_file,
     merge_correction_template,
 )
+from services.database_api import (
+    DigitalTwinApiError,
+    import_bms_register,
+    list_saved_models,
+    sync_validated_model,
+)
 from services.dtp_exporter import build_dtp_handover, export_dtp_excel, export_dtp_json
 from services.exporter import export_csv, export_excel, export_json
 from services.ifc_compliance_validator import (
@@ -48,7 +54,6 @@ from services.rvt_converter import (
     get_default_json_export_command,
     save_rvt_upload,
 )
-from services.validated_twin_snapshot import build_validated_twin_snapshot, write_validated_twin_snapshot
 from services.validator import validate_assets
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -75,6 +80,12 @@ def main() -> None:
     init_state()
 
     st.sidebar.title("Digital Twin Pipeline")
+    st.sidebar.text_input(
+        "Tên người thao tác",
+        key="actor_name",
+        placeholder="Ví dụ: Nguyễn Văn A",
+        help="Tên này được ghi vào audit cho mọi lần đồng bộ và thay đổi dữ liệu.",
+    )
     page = st.sidebar.radio(
         "Menu",
         ["Dashboard", "BIM Pipeline / BIM Converter", "Imported Data", "Settings / Rules"],
@@ -109,6 +120,10 @@ def init_state() -> None:
         "aps_source_name": "",
         "validated_snapshot_path": "",
         "validated_snapshot_name": "",
+        "database_model_id": "",
+        "database_sync_summary": {},
+        "database_models": [],
+        "actor_name": "",
         "rvt_converter_command": get_default_converter_command(),
         "rvt_json_export_command": get_default_json_export_command(),
         "ifc_compliance_df": pd.DataFrame(),
@@ -1003,67 +1018,110 @@ def render_map_tab() -> None:
 
 
 def render_preview_tab() -> None:
-    st.subheader("Xem trước dữ liệu Digital Twin")
+    st.subheader("Đồng bộ PostgreSQL và xem dữ liệu Digital Twin")
     st.caption(
-        "Snapshot giữ toàn bộ object để liên kết với mô hình 3D và chỉ hiển thị đúng 10 trường EMSD/VSF "
-        "trong Normalized O&M."
+        "PostgreSQL là nguồn dữ liệu chính. Snapshot JSON chỉ còn được xuất từ database để backup."
     )
+    render_saved_model_browser()
+    st.divider()
+    st.markdown("#### Đồng bộ một kết quả mới")
     if not st.session_state.cleaned_objects:
-        st.info("Hãy hoàn thành bước Chuẩn hóa và phân loại phạm vi trước khi xem dữ liệu.")
+        st.info(
+            "Bạn vẫn có thể mở kết quả đã lưu ở phía trên. "
+            "Chỉ cần nạp và chuẩn hóa IFC khi muốn tạo hoặc cập nhật một model."
+        )
         return
 
-    if st.button("Tạo snapshot validation", type="primary"):
+    if st.button("Đồng bộ validation vào PostgreSQL", type="primary"):
+        actor = st.session_state.actor_name.strip()
+        if not actor:
+            st.error("Hãy nhập tên người thao tác ở thanh bên để ghi audit.")
+            return
+        st.session_state.database_model_id = ""
+        st.session_state.database_sync_summary = {}
         assets = build_asset_master(st.session_state.cleaned_objects)
         st.session_state.preview_tables = build_preview_tables(assets)
         source_file = st.session_state.upload_info.get("file_name", "")
-        snapshot = build_validated_twin_snapshot(
-            st.session_state.preview_tables,
-            st.session_state.validation_df,
-            project_id=st.session_state.project_id,
-            project_name=st.session_state.project_name,
-            source_file=source_file,
-            validation_profile=st.session_state.selected_profile,
-            validation_summary=st.session_state.validation_summary,
-            compliance_summary=st.session_state.ifc_compliance_summary,
-        )
-        snapshot_path = write_validated_twin_snapshot(snapshot, OUTPUT_DIR, st.session_state.project_id)
-        st.session_state.validated_snapshot_path = str(snapshot_path)
-        st.session_state.validated_snapshot_name = snapshot_path.name
-        st.session_state.processing_status = "Ready for Preview"
-        st.success(f"Đã tạo snapshot: {snapshot_path.name}")
+        try:
+            with st.spinner("Đang gửi object IFC theo batch và chạy validation trong database..."):
+                result = sync_validated_model(
+                    st.session_state.cleaned_objects,
+                    project_code=st.session_state.project_id,
+                    project_name=st.session_state.project_name,
+                    source_file=source_file,
+                    source_path=st.session_state.current_ifc_path,
+                    aps_urn=st.session_state.aps_translation_urn,
+                    validation_profile=st.session_state.selected_profile,
+                    compliance_summary=st.session_state.ifc_compliance_summary,
+                    actor=actor,
+                )
+                st.session_state.database_model_id = result["model"]["id"]
+                st.session_state.database_sync_summary = result
+                if not st.session_state.bms_device_df.empty:
+                    result["bms"] = import_bms_register(
+                        result["model"]["id"],
+                        st.session_state.bms_device_df,
+                        st.session_state.bms_uploaded_name or "bms-device-register.csv",
+                        actor,
+                        st.session_state.bms_mapping_log_df,
+                    )
+            st.session_state.processing_status = "Ready for Preview"
+            message = f"Đã đồng bộ {result['objects']['processed']} object và tạo validation run."
+            if result.get("bms"):
+                message += (
+                    f" BMS tự động map {result['bms']['autoApply']['applied']} dòng, "
+                    f"xác nhận thủ công {result['bms']['manualApplied']} dòng."
+                )
+            st.success(message)
+            duplicate_count = sum(
+                len(values) for values in result.get("blockedDuplicates", {}).values()
+            )
+            if duplicate_count:
+                st.warning(
+                    f"Đã chặn {duplicate_count} AssetCode trùng khỏi dữ liệu chuẩn. "
+                    "Giá trị gốc vẫn nằm trong raw_source; hãy xác nhận object đúng và cấp mã duy nhất trên Viewer."
+                )
+        except DigitalTwinApiError as exc:
+            st.error(str(exc))
 
     tables = st.session_state.preview_tables
     if not tables:
         return
 
-    snapshot_name = st.session_state.validated_snapshot_name
+    model_id = st.session_state.database_model_id
     active_source_name = st.session_state.upload_info.get("file_name", "")
     aps_matches_source = (
         st.session_state.aps_viewer_ready
         and st.session_state.aps_translation_urn
         and st.session_state.aps_source_name == active_source_name
     )
-    if snapshot_name and aps_matches_source:
+    if model_id and aps_matches_source:
         viewer_base_url = os.getenv("DIGITAL_TWIN_VIEWER_URL", "http://127.0.0.1:5173").rstrip("/")
         viewer_query = urlencode(
             {
                 "urn": st.session_state.aps_translation_urn,
                 "name": active_source_name,
-                "dataset": snapshot_name,
+                "modelId": model_id,
             }
         )
         st.link_button(
-            "Mở mô hình 3D kèm kết quả validation",
+            "Mở mô hình 3D kèm dữ liệu PostgreSQL",
             f"{viewer_base_url}/aps-viewer?{viewer_query}",
             type="primary",
-            help="Mở APS Viewer và ghép object theo IFC GlobalId với dữ liệu O&M đã validation.",
+            help="Mở APS Viewer và ghép object theo IFC GlobalId với dữ liệu O&M trong PostgreSQL.",
         )
-    elif snapshot_name and st.session_state.aps_viewer_ready:
+        api_url = os.getenv("DIGITAL_TWIN_API_URL", "http://127.0.0.1:8010").rstrip("/")
+        st.link_button(
+            "Tải snapshot backup (chỉ đọc)",
+            f"{api_url}/api/v1/models/{model_id}/snapshot-export",
+            help="File được sinh từ PostgreSQL và không dùng để ghi ngược vào hệ thống.",
+        )
+    elif model_id and st.session_state.aps_viewer_ready:
         st.warning(
             "The APS viewable belongs to a different source file. Build an APS viewable for the active IFC "
             "before opening the validated view."
         )
-    elif snapshot_name:
+    elif model_id:
         st.info("Build the active IFC in the APS Viewer tab to enable the validated 3D view.")
 
     tabs = st.tabs(["Asset Master", "Location Master", "System Master", "Property Detail"])
@@ -1077,6 +1135,72 @@ def render_preview_tab() -> None:
                     errors="ignore",
                 )
             st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def render_saved_model_browser() -> None:
+    st.markdown("#### Mở lại kết quả đã lưu")
+    st.caption(
+        "Chọn model trong PostgreSQL để xem lại mà không cần nạp IFC hoặc chạy validation từ đầu."
+    )
+    reload_models = st.button("Làm mới danh sách database", key="reload_database_models")
+    if reload_models or not st.session_state.database_models:
+        try:
+            st.session_state.database_models = list_saved_models()
+        except DigitalTwinApiError as exc:
+            st.error(str(exc))
+            return
+
+    saved_models = st.session_state.database_models
+    if not saved_models:
+        st.info("Database chưa có model Digital Twin nào.")
+        return
+
+    model_ids = [item["id"] for item in saved_models]
+    selected_id = st.selectbox(
+        "Kết quả đã lưu",
+        model_ids,
+        format_func=lambda model_id: next(
+            (
+                f"{item['projectCode']} · {item['sourceFile']} · {item['importedAt'][:19]}"
+                for item in saved_models
+                if item["id"] == model_id
+            ),
+            model_id,
+        ),
+        key="saved_database_model_id",
+    )
+    selected = next(item for item in saved_models if item["id"] == selected_id)
+    st.session_state.database_model_id = selected_id
+    summary = selected.get("summary") or {}
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Object", summary.get("assetCount", 0))
+    col2.metric("Asset vận hành", summary.get("operationalAssetCount", 0))
+    col3.metric("Cần xác nhận", summary.get("scopeReviewCount", 0))
+    col4.metric("Đang thiếu", summary.get("incomplete", 0))
+
+    if selected.get("apsUrn"):
+        viewer_base_url = os.getenv("DIGITAL_TWIN_VIEWER_URL", "http://127.0.0.1:5173").rstrip("/")
+        viewer_query = urlencode(
+            {
+                "urn": selected["apsUrn"],
+                "name": selected["sourceFile"],
+                "modelId": selected["id"],
+            }
+        )
+        st.link_button(
+            "Mở lại kết quả trên APS Viewer",
+            f"{viewer_base_url}/aps-viewer?{viewer_query}",
+            type="primary",
+        )
+    else:
+        st.warning("Model này chưa có APS URN nên chỉ xem được dữ liệu database, chưa mở được mô hình 3D.")
+
+    api_url = os.getenv("DIGITAL_TWIN_API_URL", "http://127.0.0.1:8010").rstrip("/")
+    st.link_button(
+        "Tải snapshot backup từ database",
+        f"{api_url}/api/v1/models/{selected['id']}/snapshot-export",
+    )
 
 
 def render_bms_device_import_tools() -> None:
@@ -1458,6 +1582,8 @@ def load_ifc_into_session(file_path: str | Path, file_name: str, upload_time: st
     st.session_state.preview_tables = {}
     st.session_state.validated_snapshot_path = ""
     st.session_state.validated_snapshot_name = ""
+    st.session_state.database_model_id = ""
+    st.session_state.database_sync_summary = {}
     st.session_state.ifc_summary = summary
     st.session_state.last_error = ""
     st.success(f"Loaded {len(objects)} BIM objects from {file_name}.")

@@ -1,0 +1,13 @@
+.git
+.agents
+.codex
+.venv
+__pycache__
+*.pyc
+.env
+input
+output
+digital-twin-viewer/node_modules
+digital-twin-viewer/dist
+ODATrial
+BIM PipeLineDigital_Twin_v2026.06.10

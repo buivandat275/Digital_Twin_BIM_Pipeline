@@ -20,15 +20,15 @@ function readViewerQuery() {
   return {
     name: params.get("name") || "",
     urn: params.get("urn") || "",
-    dataset: params.get("dataset") || "",
+    modelId: params.get("modelId") || "",
   };
 }
 
-function updateViewerQuery(model, dataset) {
+function updateViewerQuery(model, modelId) {
   const params = new URLSearchParams();
   if (model?.urn) params.set("urn", model.urn);
   if (model?.sourceFile) params.set("name", model.sourceFile);
-  if (dataset) params.set("dataset", dataset);
+  if (modelId) params.set("modelId", modelId);
   window.history.replaceState({}, "", `/aps-viewer?${params.toString()}`);
 }
 
@@ -92,23 +92,41 @@ function PropertyRows({ values }) {
   );
 }
 
-function EditableOmProperties({ twinAsset, onSave }) {
+function EditableOmProperties({ twinAsset, onApprove, onReject, onSave }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
+  const [pendingChange, setPendingChange] = useState(null);
   const [saveState, setSaveState] = useState({ status: "idle", message: "" });
 
   useEffect(() => {
     setDraft(Object.fromEntries(OM_FIELD_NAMES.map((field) => [field, twinAsset?.normalizedProperties?.[field] || ""])));
     setEditing(false);
+    setPendingChange(null);
     setSaveState({ status: "idle", message: "" });
-  }, [twinAsset?.ifcGuid]);
+  }, [twinAsset?.ifcGuid, twinAsset?.rowVersion]);
 
   async function saveChanges() {
     setSaveState({ status: "saving", message: "Đang lưu..." });
     try {
-      await onSave(twinAsset.ifcGuid, draft);
+      const change = await onSave(twinAsset, draft);
+      setPendingChange(change);
+      setSaveState({ status: "saved", message: "Đã lưu bản nháp. Hãy xác nhận trước khi áp dụng." });
+    } catch (error) {
+      setSaveState({ status: "error", message: error.message });
+    }
+  }
+
+  async function decide(action) {
+    setSaveState({ status: "saving", message: action === "approve" ? "Đang áp dụng..." : "Đang từ chối..." });
+    try {
+      if (action === "approve") await onApprove(pendingChange.id);
+      else await onReject(pendingChange.id);
+      setPendingChange(null);
       setEditing(false);
-      setSaveState({ status: "saved", message: "Đã lưu và tính lại validation." });
+      setSaveState({
+        status: "saved",
+        message: action === "approve" ? "Đã xác nhận áp dụng và chạy lại validation." : "Đã từ chối bản nháp.",
+      });
     } catch (error) {
       setSaveState({ status: "error", message: error.message });
     }
@@ -154,12 +172,25 @@ function EditableOmProperties({ twinAsset, onSave }) {
         </label>
       ))}
       <div className="aps-om-editor-actions">
-        <button disabled={saveState.status === "saving"} onClick={saveChanges} type="button">
-          <Save size={14} /> Lưu
-        </button>
-        <button onClick={() => setEditing(false)} type="button">
-          <X size={14} /> Hủy
-        </button>
+        {pendingChange ? (
+          <>
+            <button disabled={saveState.status === "saving"} onClick={() => decide("approve")} type="button">
+              <Save size={14} /> Xác nhận áp dụng
+            </button>
+            <button disabled={saveState.status === "saving"} onClick={() => decide("reject")} type="button">
+              <X size={14} /> Từ chối
+            </button>
+          </>
+        ) : (
+          <>
+            <button disabled={saveState.status === "saving"} onClick={saveChanges} type="button">
+              <Save size={14} /> Lưu bản nháp
+            </button>
+            <button onClick={() => setEditing(false)} type="button">
+              <X size={14} /> Hủy
+            </button>
+          </>
+        )}
       </div>
       {saveState.message ? <p className={`aps-save-message ${saveState.status}`}>{saveState.message}</p> : null}
     </div>
@@ -203,8 +234,10 @@ function PropertyInspector({
   selection,
   twinAsset,
   similarAssets,
+  onApproveChange,
   onConfirmScope,
   onFocusAsset,
+  onRejectChange,
   onSaveAsset,
 }) {
   const [activeTab, setActiveTab] = useState("source");
@@ -272,9 +305,14 @@ function PropertyInspector({
 
       {activeTab === "normalized" ? (
         twinAsset ? (
-          <EditableOmProperties onSave={onSaveAsset} twinAsset={twinAsset} />
+          <EditableOmProperties
+            onApprove={onApproveChange}
+            onReject={onRejectChange}
+            onSave={onSaveAsset}
+            twinAsset={twinAsset}
+          />
         ) : (
-          <p className="aps-property-empty">Object này chưa khớp với snapshot theo IFC GlobalId.</p>
+          <p className="aps-property-empty">Object này chưa khớp với database theo IFC GlobalId.</p>
         )
       ) : null}
 
@@ -284,6 +322,10 @@ function PropertyInspector({
             {twinAsset.operationalScope === "context" ? (
               <p className="aps-property-empty">
                 Object được giữ làm bối cảnh 3D và không bị kiểm tra 10 trường vận hành.
+              </p>
+            ) : twinAsset.operationalScope === "scope_review" ? (
+              <p className="aps-property-empty">
+                Hãy xác nhận object có thuộc vận hành trước khi đánh giá đủ/thiếu 10 trường O&amp;M.
               </p>
             ) : twinAsset.validationIssues?.length ? (
               <div className="aps-validation-issues">
@@ -298,7 +340,7 @@ function PropertyInspector({
             ) : (
               <p className="aps-property-empty success">Object này đã đủ 10 trường EMSD/VSF.</p>
             )}
-            {twinAsset.operationalScope !== "context" ? (
+            {["maintainable", "realtime"].includes(twinAsset.operationalScope) ? (
               <div className="aps-similar-assets">
                 <button onClick={() => setShowSimilar((value) => !value)} type="button">
                   {showSimilar ? "Ẩn danh sách" : `Xem ${similarAssets.length} object cùng loại đang thiếu`}
@@ -317,7 +359,7 @@ function PropertyInspector({
             ) : null}
           </div>
         ) : (
-          <p className="aps-property-empty">Object IFC này không có trong snapshot validation.</p>
+          <p className="aps-property-empty">Object IFC này không có trong database validation.</p>
         )
       ) : null}
     </aside>
@@ -332,11 +374,12 @@ export function ApsViewerApp() {
   const [modelName, setModelName] = useState(initialQuery.name || "APS model");
   const [externalId, setExternalId] = useState("");
   const [selection, setSelection] = useState(null);
+  const [actorName, setActorName] = useState(() => window.localStorage.getItem("digitalTwinActorName") || "");
   const [showIncompleteList, setShowIncompleteList] = useState(false);
   const [incompleteListMode, setIncompleteListMode] = useState("operational");
   const [incompleteSearch, setIncompleteSearch] = useState("");
   const [snapshotState, setSnapshotState] = useState({
-    status: initialQuery.dataset ? "loading" : "none",
+    status: initialQuery.modelId ? "loading" : "none",
     data: null,
     error: "",
   });
@@ -362,6 +405,13 @@ export function ApsViewerApp() {
       selectionIfcIds(selection)
         .map((candidate) => twinAssetIndex.get(normalizeId(candidate)))
         .find(Boolean) || null,
+    [selection, twinAssetIndex],
+  );
+  const selectedIfcGuid = useMemo(
+    () =>
+      selectionIfcIds(selection)
+        .map((candidate) => twinAssetIndex.get(normalizeId(candidate))?.ifcGuid)
+        .find(Boolean) || "",
     [selection, twinAssetIndex],
   );
   const similarAssets = useMemo(() => {
@@ -403,16 +453,26 @@ export function ApsViewerApp() {
   }, [activeIncompleteList, incompleteSearch]);
 
   useEffect(() => {
-    if (!initialQuery.dataset) return undefined;
+    if (!initialQuery.modelId) return undefined;
     let cancelled = false;
     setSnapshotState({ status: "loading", data: null, error: "" });
-    fetch(`/bim-output/${encodeURIComponent(initialQuery.dataset)}`)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Validated snapshot not found: HTTP ${response.status}`);
-        return response.json();
+    Promise.all([
+      fetch(`/api/v1/models/${encodeURIComponent(initialQuery.modelId)}/viewer-summary`),
+      fetch(`/api/v1/models/${encodeURIComponent(initialQuery.modelId)}/assets?limit=50000`),
+    ])
+      .then(async ([summaryResponse, assetsResponse]) => {
+        if (!summaryResponse.ok) throw new Error(`Không tải được tổng hợp database: HTTP ${summaryResponse.status}`);
+        if (!assetsResponse.ok) throw new Error(`Không tải được asset database: HTTP ${assetsResponse.status}`);
+        return [await summaryResponse.json(), await assetsResponse.json()];
       })
-      .then((data) => {
-        if (!cancelled) setSnapshotState({ status: "ready", data, error: "" });
+      .then(([summaryPayload, assetsPayload]) => {
+        if (!cancelled) {
+          setSnapshotState({
+            status: "ready",
+            data: { summary: summaryPayload.summary, model: summaryPayload.model, assets: assetsPayload.items || [] },
+            error: "",
+          });
+        }
       })
       .catch((error) => {
         if (!cancelled) setSnapshotState({ status: "error", data: null, error: error.message });
@@ -420,7 +480,34 @@ export function ApsViewerApp() {
     return () => {
       cancelled = true;
     };
-  }, [initialQuery.dataset]);
+  }, [initialQuery.modelId]);
+
+  useEffect(() => {
+    if (!initialQuery.modelId || !selectedIfcGuid) return undefined;
+    let cancelled = false;
+    fetch(
+      `/api/v1/models/${encodeURIComponent(initialQuery.modelId)}/assets/by-ifc-guid/${encodeURIComponent(selectedIfcGuid)}`,
+    )
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || `HTTP ${response.status}`);
+        return payload;
+      })
+      .then((asset) => {
+        if (cancelled) return;
+        setSnapshotState((current) => ({
+          ...current,
+          data: {
+            ...current.data,
+            assets: (current.data?.assets || []).map((item) => (item.ifcGuid === asset.ifcGuid ? asset : item)),
+          },
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [initialQuery.modelId, selectedIfcGuid]);
 
   useEffect(() => {
     let cancelled = false;
@@ -436,7 +523,7 @@ export function ApsViewerApp() {
         if (!initialQuery.urn && nextModels[0]) {
           setSelectedUrn(nextModels[0].urn);
           setModelName(nextModels[0].sourceFile);
-          updateViewerQuery(nextModels[0], initialQuery.dataset);
+          updateViewerQuery(nextModels[0], initialQuery.modelId);
         }
       })
       .catch((error) => {
@@ -447,7 +534,7 @@ export function ApsViewerApp() {
     return () => {
       cancelled = true;
     };
-  }, [initialQuery.dataset, initialQuery.urn]);
+  }, [initialQuery.modelId, initialQuery.urn]);
 
   function selectModel(urn) {
     const model = models.find((item) => item.urn === urn);
@@ -455,7 +542,7 @@ export function ApsViewerApp() {
     setSelectedUrn(urn);
     setModelName(model?.sourceFile || "APS model");
     setStatus({ status: "Loading", message: "Preparing APS model...", progress: 0 });
-    updateViewerQuery(model || { urn, sourceFile: "APS model" }, initialQuery.dataset);
+    updateViewerQuery(model || { urn, sourceFile: "APS model" }, initialQuery.modelId);
   }
 
   async function focusExternalId(event) {
@@ -469,30 +556,76 @@ export function ApsViewerApp() {
     setSelection(null);
   }
 
-  async function saveTwinAsset(ifcGuid, values, operationalScope = "") {
-    if (!initialQuery.dataset) throw new Error("URL chưa có dataset để lưu chỉnh sửa.");
-    const response = await fetch(
-      `/api/validated-snapshots/${encodeURIComponent(initialQuery.dataset)}/assets/${encodeURIComponent(ifcGuid)}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ values, operationalScope }),
-      },
-    );
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload.error || `Không thể lưu: HTTP ${response.status}`);
+  function mutationHeaders() {
+    const actor = actorName.trim();
+    if (!actor) throw new Error("Hãy nhập tên người thao tác trước khi lưu để ghi audit.");
+    window.localStorage.setItem("digitalTwinActorName", actor);
+    return {
+      "Content-Type": "application/json",
+      "X-Actor-Name": encodeURIComponent(actor),
+      "X-Request-ID": `aps-viewer-${crypto.randomUUID()}`,
+    };
+  }
+
+  async function refreshSummary() {
+    const response = await fetch(`/api/v1/models/${encodeURIComponent(initialQuery.modelId)}/viewer-summary`);
+    if (!response.ok) return;
+    const payload = await response.json();
+    setSnapshotState((current) => ({
+      ...current,
+      data: { ...current.data, summary: payload.summary },
+    }));
+  }
+
+  function replaceTwinAsset(asset) {
     setSnapshotState((current) => ({
       ...current,
       data: {
         ...current.data,
-        summary: payload.summary,
-        assets: (current.data?.assets || []).map((asset) => (asset.ifcGuid === ifcGuid ? payload.asset : asset)),
+        assets: (current.data?.assets || []).map((item) => (item.ifcGuid === asset.ifcGuid ? asset : item)),
       },
     }));
   }
 
+  async function saveTwinAsset(twinAsset, values, operationalScope = "") {
+    if (!initialQuery.modelId) throw new Error("URL chưa có modelId để lưu chỉnh sửa.");
+    const response = await fetch(
+      `/api/v1/assets/${encodeURIComponent(twinAsset.id)}/changes`,
+      {
+        method: "POST",
+        headers: mutationHeaders(),
+        body: JSON.stringify({
+          base_version: twinAsset.rowVersion,
+          patch: { values, ...(operationalScope ? { operationalScope } : {}) },
+          source: "aps_viewer",
+        }),
+      },
+    );
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || `Không thể lưu bản nháp: HTTP ${response.status}`);
+    return payload;
+  }
+
+  async function decideChange(changeId, action) {
+    const response = await fetch(`/api/v1/change-requests/${encodeURIComponent(changeId)}/${action}`, {
+      method: "POST",
+      headers: mutationHeaders(),
+      body: JSON.stringify({ source: "aps_viewer" }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || `Không thể ${action}: HTTP ${response.status}`);
+    if (payload.asset) {
+      replaceTwinAsset(payload.asset);
+      await refreshSummary();
+    }
+    return payload;
+  }
+
   async function confirmTwinAssetScope(ifcGuid, operationalScope) {
-    return saveTwinAsset(ifcGuid, {}, operationalScope);
+    const asset = twinAssetIndex.get(normalizeId(ifcGuid));
+    if (!asset) throw new Error("Không tìm thấy asset trong database.");
+    const change = await saveTwinAsset(asset, {}, operationalScope);
+    return decideChange(change.id, "approve");
   }
 
   async function focusTwinAsset(ifcGuid) {
@@ -554,6 +687,14 @@ export function ApsViewerApp() {
         </form>
 
         <div className="aps-viewer-actions">
+          <input
+            aria-label="Tên người thao tác"
+            onBlur={() => window.localStorage.setItem("digitalTwinActorName", actorName.trim())}
+            onChange={(event) => setActorName(event.target.value)}
+            placeholder="Tên người thao tác"
+            title="Tên được ghi vào audit"
+            value={actorName}
+          />
           <button onClick={() => viewerRef.current?.fitModel()} title="Fit model" type="button">
             <Maximize2 size={18} />
           </button>
@@ -580,16 +721,16 @@ export function ApsViewerApp() {
           <strong>{status.message}</strong>
           {status.status === "Loading" ? <progress max="100" value={status.progress} /> : null}
         </div>
-        {initialQuery.dataset ? (
+        {initialQuery.modelId ? (
           <div className={`aps-twin-summary ${snapshotState.status}`}>
             <Database size={16} />
             <div>
               <strong>
                 {snapshotState.status === "ready"
-                  ? "Digital Twin đã nạp validation"
+                  ? "Digital Twin đã kết nối PostgreSQL"
                   : snapshotState.status === "error"
-                    ? "Snapshot unavailable"
-                    : "Loading validated data..."}
+                    ? "Database unavailable"
+                    : "Đang tải dữ liệu validation..."}
               </strong>
               <span>
                 {snapshotState.status === "ready"
@@ -664,10 +805,13 @@ export function ApsViewerApp() {
                         : asset.operationalScope === "realtime"
                           ? "Realtime"
                           : "Maintainable"}
-                      {" · "}
-                      thiếu {missing.length}/10 trường
+                      {asset.operationalScope === "scope_review" ? "" : ` · thiếu ${missing.length}/10 trường`}
                     </span>
-                    <small>{missing.join(", ")}</small>
+                    <small>
+                      {asset.operationalScope === "scope_review"
+                        ? asset.scopeReason || "Chưa có quyết định phạm vi"
+                        : missing.join(", ")}
+                    </small>
                   </button>
                 );
               })}
@@ -678,8 +822,10 @@ export function ApsViewerApp() {
           </aside>
         ) : null}
         <PropertyInspector
+          onApproveChange={(changeId) => decideChange(changeId, "approve")}
           onConfirmScope={confirmTwinAssetScope}
           onFocusAsset={focusTwinAsset}
+          onRejectChange={(changeId) => decideChange(changeId, "reject")}
           onSaveAsset={saveTwinAsset}
           selection={selection}
           similarAssets={similarAssets}

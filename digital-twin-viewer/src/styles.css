@@ -3146,6 +3146,17 @@ select {
   gap: 6px;
 }
 
+.aps-viewer-actions input {
+  width: 150px;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid #c5d3d7;
+  border-radius: 5px;
+  color: #24343a;
+  background: #fff;
+  font-size: 11px;
+}
+
 .aps-viewer-stage {
   position: relative;
   min-height: 0;

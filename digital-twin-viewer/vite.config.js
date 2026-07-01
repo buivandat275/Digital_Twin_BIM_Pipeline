@@ -19,19 +19,6 @@ const fragmentsWorkerPath = path.join(
   "Worker",
   "worker.min.mjs",
 );
-const OM_FIELD_NAMES = [
-  "EMSD.Common.Asset Code",
-  "EMSD.Common.Asset Tag No.",
-  "EMSD.Common.Manufacturer",
-  "VSF.Common.Asset Code",
-  "VSF.Common.Asset Tag No.",
-  "VSF.Common.Manufacturer",
-  "VSF.Location",
-  "VSF.Link",
-  "VSF.Status",
-  "VSF.Document",
-];
-
 function readJson(filePath, fallback) {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -121,123 +108,6 @@ function safeFilePath(baseDir, requestedName) {
   const resolved = path.resolve(baseDir, requestedName);
   if (!resolved.startsWith(path.resolve(baseDir))) return null;
   return resolved;
-}
-
-function missingOmFields(asset) {
-  const values = asset?.normalizedProperties || {};
-  return OM_FIELD_NAMES.filter((field) => !String(values[field] ?? "").trim());
-}
-
-function buildOmValidationIssues(asset) {
-  if (asset?.operationalScope === "context") return [];
-  return missingOmFields(asset).map((field) => ({
-    global_id: asset.ifcGuid || "",
-    object_name: asset.name || "",
-    ifc_class: asset.sourceReference?.ifc_class || "",
-    field,
-    error_type: `Thiếu ${field}`,
-    severity: "Medium",
-    suggested_fix: `Nhập ${field} trực tiếp trên màn hình hoặc qua correction template.`,
-    profile: "vsf_om_10",
-  }));
-}
-
-function recalculateSnapshotSummary(snapshot) {
-  const assets = Array.isArray(snapshot.assets) ? snapshot.assets : [];
-  const missingByField = Object.fromEntries(OM_FIELD_NAMES.map((field) => [field, 0]));
-  let missingFieldCount = 0;
-  let complete = 0;
-  let incomplete = 0;
-  let operationalAssetCount = 0;
-  let scopeReviewCount = 0;
-  let contextCount = 0;
-
-  for (const asset of assets) {
-    const scope = asset.operationalScope || "context";
-    const missing = scope === "context" ? [] : missingOmFields(asset);
-    asset.validationIssues = buildOmValidationIssues(asset);
-    if (scope === "context") {
-      asset.readinessStatus = "Excluded";
-      contextCount += 1;
-    } else if (scope === "scope_review") {
-      asset.readinessStatus = "Scope Review";
-      scopeReviewCount += 1;
-    } else {
-      operationalAssetCount += 1;
-      asset.readinessStatus = missing.length ? "Incomplete" : "Complete";
-      if (missing.length) incomplete += 1;
-      else complete += 1;
-    }
-    missingFieldCount += missing.length;
-    for (const field of missing) missingByField[field] += 1;
-  }
-
-  snapshot.summary = {
-    ...(snapshot.summary || {}),
-    assetCount: assets.length,
-    operationalAssetCount,
-    scopeReviewCount,
-    contextCount,
-    complete,
-    incomplete,
-    missingFieldCount,
-    missingByField,
-    validation: {
-      total_errors: missingFieldCount,
-      High: 0,
-      Medium: missingFieldCount,
-      Low: 0,
-      total_objects: assets.length,
-      checked_objects: operationalAssetCount + scopeReviewCount,
-      context_objects: contextCount,
-      scope_review_objects: scopeReviewCount,
-      complete_objects: complete,
-      incomplete_objects: incomplete + scopeReviewCount,
-      missing_by_field: missingByField,
-    },
-  };
-  snapshot.updatedAt = new Date().toISOString();
-  return snapshot;
-}
-
-function updateValidatedSnapshot(fileName, ifcGuid, values, operationalScope = "") {
-  const filePath = safeFilePath(outputDir, fileName);
-  if (!filePath || path.extname(filePath).toLowerCase() !== ".json" || !fs.existsSync(filePath)) {
-    throw new Error("Không tìm thấy snapshot validation.");
-  }
-  const snapshot = readJson(filePath, null);
-  if (!snapshot || snapshot.kind !== "validated-digital-twin-snapshot") {
-    throw new Error("File không phải validated Digital Twin snapshot.");
-  }
-  const asset = (snapshot.assets || []).find(
-    (item) => String(item.ifcGuid || "").trim().toLowerCase() === String(ifcGuid || "").trim().toLowerCase(),
-  );
-  if (!asset) throw new Error("Không tìm thấy IFC GlobalId trong snapshot.");
-
-  if (operationalScope) {
-    const allowedScopes = new Set(["context", "maintainable", "realtime", "scope_review"]);
-    if (!allowedScopes.has(operationalScope)) {
-      throw new Error("Operational scope không hợp lệ.");
-    }
-    asset.operationalScope = operationalScope;
-    asset.scopeReason = "Phạm vi do người dùng xác nhận trực tiếp trên APS Viewer";
-    asset.scopeSource = "manual_viewer";
-  }
-
-  const existingValues = asset.normalizedProperties || {};
-  asset.normalizedProperties = Object.fromEntries(
-    OM_FIELD_NAMES.map((field) => [field, existingValues[field] || ""]),
-  );
-  asset.fieldSources = { ...(asset.fieldSources || {}) };
-  for (const field of OM_FIELD_NAMES) {
-    if (!Object.prototype.hasOwnProperty.call(values || {}, field)) continue;
-    asset.normalizedProperties[field] = String(values[field] ?? "").trim();
-    asset.fieldSources[field] = "manual_viewer";
-  }
-
-  recalculateSnapshotSummary(snapshot);
-  fs.writeFileSync(filePath, JSON.stringify(snapshot, null, 2), "utf8");
-  return { asset, summary: snapshot.summary, updatedAt: snapshot.updatedAt };
 }
 
 function normalizeText(value = "") {
@@ -900,21 +770,6 @@ function digitalTwinApi() {
           return;
         }
 
-        const snapshotAssetMatch = url.pathname.match(
-          /^\/api\/validated-snapshots\/([^/]+)\/assets\/([^/]+)$/,
-        );
-        if (snapshotAssetMatch && req.method === "PATCH") {
-          const dataset = decodeURIComponent(snapshotAssetMatch[1]);
-          const ifcGuid = decodeURIComponent(snapshotAssetMatch[2]);
-          readRequestJson(req)
-            .then(({ values, operationalScope }) =>
-              updateValidatedSnapshot(dataset, ifcGuid, values || {}, operationalScope || ""),
-            )
-            .then((result) => sendJson(res, result))
-            .catch((error) => sendError(res, 400, error.message));
-          return;
-        }
-
         if (url.pathname.startsWith("/bim-output/")) {
           const fileName = decodeURIComponent(url.pathname.replace("/bim-output/", ""));
           const filePath = safeFilePath(outputDir, fileName);
@@ -957,8 +812,6 @@ function digitalTwinApi() {
   };
 }
 
-export { updateValidatedSnapshot };
-
 export default defineConfig({
   plugins: [react(), digitalTwinApi()],
   resolve: {
@@ -971,6 +824,14 @@ export default defineConfig({
         __dirname,
         "src/three-buffer-geometry-utils.js",
       ),
+    },
+  },
+  server: {
+    proxy: {
+      "/api/v1": {
+        target: process.env.DIGITAL_TWIN_API_URL || "http://127.0.0.1:8010",
+        changeOrigin: true,
+      },
     },
   },
 });

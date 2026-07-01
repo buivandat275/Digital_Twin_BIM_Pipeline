@@ -317,3 +317,9 @@ selected IFC GlobalId
 ## 10. Notes
 
 The pipeline does not modify the original IFC file. The included `digital-twin-viewer` is a browser-based 3D inspection surface for IFC geometry, old IFC/source properties, and clean Digital Twin metadata. For deployment, keep rules/profile files versioned, add audit history for correction approvals, and connect the exported handover package to the target DTP/CMMS/BMS integration layer.
+# PostgreSQL validation API
+
+The validation workflow now uses PostgreSQL as its source of truth and FastAPI
+for both Streamlit and the APS Viewer. Setup, DBeaver connection details, audit
+behavior, and startup commands are documented in
+[`docs/postgresql-audit-guide.md`](docs/postgresql-audit-guide.md).

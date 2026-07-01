@@ -29,3 +29,4 @@ digital-twin-viewer/.vite/
 *.log
 .env
 .env.*
+!.env.example

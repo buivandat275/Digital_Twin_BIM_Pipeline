@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: digital-twin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-digital_twin}
+      POSTGRES_USER: ${POSTGRES_APP_USER:-dt_app}
+      POSTGRES_PASSWORD: ${POSTGRES_APP_PASSWORD:-change_me}
+      POSTGRES_READER_USER: ${POSTGRES_READER_USER:-dt_reader}
+      POSTGRES_READER_PASSWORD: ${POSTGRES_READER_PASSWORD:-change_reader_me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - digital_twin_pgdata:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_APP_USER:-dt_app} -d ${POSTGRES_DB:-digital_twin}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: digital-twin-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_APP_USER:-dt_app}:${POSTGRES_APP_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-digital_twin}
+      CORS_ORIGINS: http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:8501,http://localhost:8501
+    ports:
+      - "8010:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  digital_twin_pgdata:
