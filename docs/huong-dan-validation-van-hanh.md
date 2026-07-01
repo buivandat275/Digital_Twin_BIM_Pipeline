@@ -2,11 +2,13 @@
 
 ## Pipeline kiểm tra gì?
 
-Pipeline chỉ có hai lớp validation:
+Pipeline có hai lớp validation:
 
 1. **IFC Compliance**: kiểm tra file có đọc được và đúng cấu trúc/schema IFC hay không.
-2. **Phạm vi vận hành**: tách object vận hành khỏi object chỉ dùng làm bối cảnh 3D.
-3. **10 trường EMSD/VSF**: chỉ kiểm tra object vận hành/cần xác nhận phạm vi.
+2. **Sẵn sàng vận hành**:
+   - tách asset vận hành khỏi object chỉ dùng làm bối cảnh 3D;
+   - đưa object chưa rõ vào danh sách cần người dùng xác nhận;
+   - kiểm tra 10 trường EMSD/VSF trên asset đã được xác nhận thuộc vận hành.
 
 Pipeline không yêu cầu thêm Manufacturer/Serial/CMMS/BMS ngoài 10 trường dưới đây.
 
@@ -31,14 +33,16 @@ Pipeline không yêu cầu thêm Manufacturer/Serial/CMMS/BMS ngoài 10 trườn
 2. Chạy tab **Kiểm tra IFC**.
 3. Trong tab **10 trường EMSD/VSF**, chọn **Phân loại vận hành & map 10 trường**.
 4. Chọn **Kiểm tra trường còn thiếu**.
-5. Tạo snapshot và mở APS Viewer.
-6. Chọn object trong mô hình.
-7. Mở tab **Dữ liệu O&M**:
+5. Tại tab **Xem trước**, đồng bộ kết quả validation vào PostgreSQL.
+6. Mở APS Viewer bằng đường dẫn có `urn` và `modelId`.
+7. Chọn object trong mô hình.
+8. Mở tab **Dữ liệu O&M**:
    - Trường có sẵn được map thẳng từ IFC.
    - Trường trống hiển thị `Thiếu thông tin`.
-   - Chọn **Sửa**, nhập dữ liệu và **Lưu**.
-8. Mở tab **Lỗi cần xử lý** để xem các trường thiếu và các object cùng family đang thiếu tương tự.
-9. Chọn **Xem N object chưa đủ thông tin** để mở danh sách kiểm tra:
+   - Chọn **Sửa**, nhập dữ liệu và **Lưu bản nháp**.
+   - Kiểm tra lại rồi chọn **Xác nhận áp dụng** hoặc **Từ chối**.
+9. Mở tab **Lỗi cần xử lý** để xem các trường thiếu.
+10. Chọn **Xem N object chưa đủ thông tin** để mở danh sách kiểm tra:
    - Tìm theo tên, IFC GUID hoặc loại object.
    - Xem số lượng và tên cụ thể các trường còn thiếu.
    - Bấm một object trong danh sách để zoom/chọn đúng object đó trên mô hình và tiếp tục sửa.
@@ -60,7 +64,7 @@ Trong tab **10 trường EMSD/VSF**:
    - AssetCode BMS không tìm thấy trong IFC.
 7. Với từng dòng chờ, chọn/nhập IFC GlobalId đích, tích **Tôi đã kiểm tra và xác nhận mapping này**.
 8. Chọn **Áp dụng các mapping đã xác nhận**.
-9. Tạo lại snapshot validation để xem dữ liệu mới trên APS Viewer.
+9. Đồng bộ model vào PostgreSQL. Các dòng hợp lệ được ghi vào batch đối soát; dòng có vấn đề tiếp tục chờ quyết định.
 
 Cột bắt buộc:
 
@@ -89,7 +93,7 @@ Pipeline không tự ghi dữ liệu khi AssetCode trùng. Chỉ mapping duy nh�
 - **Đủ thông tin**: object có đủ cả 10 trường.
 - **Thiếu thông tin**: object còn thiếu ít nhất một trong 10 trường.
 
-Sau mỗi lần lưu trên Viewer, snapshot được cập nhật và validation được tính lại ngay.
+Sau khi người dùng phê duyệt bản nháp trên Viewer, dữ liệu chính và validation được cập nhật trong PostgreSQL, đồng thời hệ thống ghi audit. Snapshot chỉ là bản backup được xuất từ database và không dùng để cập nhật hệ thống.
 
 Với object **Cần xác nhận vận hành**, Viewer hiển thị ba lựa chọn:
 
